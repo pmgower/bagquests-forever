@@ -31,7 +31,7 @@ alts table, Forever two-part names (`UnitName("player")` 2nd value = surname).
 Everything else in `Data/` comes from community guides.
 
 ## Roadmap
-1. ~~Alliance route for Cozy Sleeping Bag.~~ Done in 0.2.1-beta: a questline can have
+1. ~~Alliance route for Cozy Sleeping Bag.~~ Done for 0.2.0-beta: a questline can have
    `routes` per faction. Alliance swaps only the first two stops (Westfall, then the Barrens)
    and starts with quest 79008, not 79007; Stonetalon onward is shared. Not verified in game.
 2. Confirm remaining quest IDs/coords in play (`/bq verify`).
