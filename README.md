@@ -7,6 +7,25 @@ optional alts table.
 Questlines so far: **Cozy Sleeping Bag** (plus the Old Toolbox along the way)
 and **Stronger than Steel** (Spidersilk Sack 10 reagent / Pouch 12).
 
+**Download:** [BagQuests: Forever on CurseForge](https://www.curseforge.com/projects/1808477)
+(awaiting CurseForge approval; the link works once the project is live).
+Source and issues: this repo.
+
+## Screenshots
+
+The next step for each questline, with the level you need and how your
+character compares:
+
+![On-screen tracker showing both questlines](docs/screenshots/tracker-two-questlines.png)
+
+Questlines your character can't start yet are listed at the bottom:
+
+![Tracker on a level 15 character](docs/screenshots/tracker-locked-questline.png)
+
+`/bq alts` shows every character's progress (optional BagQuests_Alts module):
+
+![Alts table](docs/screenshots/alts-table.png)
+
 ## Level hints
 
 Each step on the tracker shows **Req** (the level needed to start the questline),

@@ -7,6 +7,9 @@ move-folders:
 ignore:
   - tests
   - curseforge
+  - docs
+  - CONTRIBUTING.md
+  - .luacheckrc
   - .github
   - README.md
   - "*.zip"
