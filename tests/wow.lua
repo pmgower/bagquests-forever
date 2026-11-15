@@ -38,7 +38,7 @@ function Fake.Session(root, saved, char)
   env.MapCanvasDataProviderMixin, env.MapCanvasPinMixin = {}, {}
   env.UnitName = function() return char.name, char.surname end
   env.GetRealmName = function() return "CAMWOW" end
-  env.UnitClass = function() return char.class, char.class end
+  env.UnitClass = function() return "Warlock", char.class end
   env.UnitLevel = function() return char.level end
   env.UnitFactionGroup = function() return char.faction end
   env.time = function() return 1763200000 end

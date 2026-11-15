@@ -1,0 +1,7 @@
+# Every change needs Paul's eyes; these paths are the sensitive ones.
+*                     @pmgower
+/.github/             @pmgower
+/BagQuests/Libs/      @pmgower
+/tests/safety.lua     @pmgower
+/tests/libs.sha256    @pmgower
+/.luacheckrc          @pmgower

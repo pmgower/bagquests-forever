@@ -1,8 +1,12 @@
-name: Tests
+# Runs on every pull request (including from forks, with no secrets) and on
+# pushes to main. The three job names are required checks in the main ruleset.
+name: Checks
 on:
   pull_request:
   push:
     branches: [main]
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -10,3 +14,22 @@ jobs:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y lua5.1
       - run: lua5.1 tests/run.lua
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y lua-check
+      - run: luacheck . --formatter plain
+  safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y lua5.1
+      - name: No risky game API calls, no new SavedVariables, no secret-exposing triggers
+        run: lua5.1 tests/safety.lua
+      - name: Bundled libraries are byte-for-byte the pinned versions
+        run: |
+          cd BagQuests/Libs
+          sha256sum -c ../../tests/libs.sha256
+          test "$(find . -type f -name '*.lua' | wc -l)" -eq "$(wc -l < ../../tests/libs.sha256)" \
+            || { echo "A Lua file was added to or removed from Libs/"; exit 1; }

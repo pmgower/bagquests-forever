@@ -1,12 +1,12 @@
 -- App: use cases and event wiring. Adapters and UI call in here; Domain never
 -- calls out. Other addons (BagQuests_Alts) subscribe with BagQuests.OnRefresh.
-local ADDON, ns = ...
+local _, ns = ...
 
 local App = {}
 ns.App = App
 _G.BagQuests = App
 
-App.VERSION = "0.1.4-beta"
+App.VERSION = "0.1.5-beta"
 local Domain = ns.Domain
 App.Domain = Domain
 local db
@@ -40,7 +40,8 @@ function App.Character()
   local first, second
   if UnitName then first, second = UnitName("player") end -- "a and f()" would drop the 2nd value
   local realm = GetRealmName and GetRealmName() or "?"
-  local _, class = UnitClass and UnitClass("player")
+  local class
+  if UnitClass then class = select(2, UnitClass("player")) end -- class token, e.g. "WARLOCK"
   return { name = plain(first) or "?", surname = plain(second), realm = realm, class = class }
 end
 
