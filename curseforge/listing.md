@@ -34,4 +34,6 @@ More bag quests are coming.
 ### Beta
 The quest data comes from community guides. If you see a red "Quest ID mismatch" message, please post the output of `/bq verify` in the comments.
 
+Source code and issues: https://github.com/pmgower/bagquests-forever
+
 Map pins use HereBeDragons by Nevcairiel (BSD).
