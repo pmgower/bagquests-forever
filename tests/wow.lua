@@ -24,6 +24,7 @@ Fake.stub = stub
 
 function Fake.Session(root, saved, char)
   local env = setmetatable({}, { __index = _G })
+  local minimap = { shown = nil }
   env._G = env
   local printed = {}
   env.printed = printed
@@ -57,6 +58,16 @@ function Fake.Session(root, saved, char)
   local pins = { world = {}, mini = {} }
   env.pinsPlaced = pins
   env.LibStub = function(name)
+    if name == "LibDataBroker-1.1" then
+      return { NewDataObject = function(_, _, obj) minimap.obj = obj; return obj end }
+    end
+    if name == "LibDBIcon-1.0" then
+      return {
+        Register = function(_, _, obj, db) minimap.registered = obj; minimap.db = db end,
+        Show = function() minimap.shown = true end,
+        Hide = function() minimap.shown = false end,
+      }
+    end
     if name == "HereBeDragons-Pins-2.0" then
       return {
         RemoveAllWorldMapIcons = function() pins.world = {} ; env.pinsPlaced.world = pins.world end,
@@ -67,6 +78,25 @@ function Fake.Session(root, saved, char)
     end
   end
   env.HBD_PINS_WORLDMAP_SHOW_CONTINENT = 2
+  -- Settings API (Options > AddOns)
+  local settingsUI = { checkboxes = {}, opened = nil, registered = false }
+  env.settingsUI = settingsUI
+  env.Settings = {
+    RegisterVerticalLayoutCategory = function(name) return { name = name, GetID = function() return 42 end } end,
+    RegisterAddOnSetting = function(_, variable, key, tbl, _, label)
+      local setting = { key = key, tbl = tbl, label = label }
+      function setting:SetValueChangedCallback(fn) self.cb = fn end
+      function setting:SetValue(v) self.tbl[self.key] = v; if self.cb then self.cb(self, v) end end
+      settingsUI.checkboxes[key] = setting
+      return setting
+    end,
+    CreateCheckbox = function() end,
+    RegisterAddOnCategory = function() settingsUI.registered = true end,
+    OpenToCategory = function(id) settingsUI.opened = id end,
+  }
+  env.shiftDown = false
+  env.IsShiftKeyDown = function() return env.shiftDown end
+  env.minimapIcon = minimap
   for k, v in pairs(saved) do env[k] = v end
 
   local function loadAddon(name, skipLibs)
