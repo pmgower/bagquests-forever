@@ -68,10 +68,41 @@ test("NextStep is nil when everything is done", function()
 end)
 
 test("LevelFit: blocked below req, low below suggested, ok above", function()
-  local s2 = cozy.steps[2] -- suggested 24
+  local s2 = D.StepsFor(cozy, "Horde")[2] -- suggested 24
   eq(D.LevelFit(cozy, s2, 12), D.FIT.BLOCKED)
   eq(D.LevelFit(cozy, s2, 20), D.FIT.LOW)
   eq(D.LevelFit(cozy, s2, 24), D.FIT.OK)
+end)
+
+test("Alliance route: Westfall first, then the Barrens, then the shared steps", function()
+  local a, h = D.StepsFor(cozy, "Alliance"), D.StepsFor(cozy, "Horde")
+  eq(#a, 7); eq(a[1].mapID, 1436, "Westfall first"); eq(a[2].mapID, 1413, "Barrens second")
+  eq(a[1].starts, 79008); eq(a[2].turnsIn, 79008)
+  eq(h[1].starts, 79007)
+  for i = 3, 7 do eq(a[i], h[i], "step " .. i .. " shared") end
+  eq(D.StepsFor(cozy, nil), h, "unknown faction falls back to Horde")
+  eq(D.StepsFor(steel, "Alliance"), steel.steps, "single-route line")
+end)
+
+test("Alliance carrying the note: step 2 is the Barrens tower", function()
+  local r = D.Evaluate(cozy, { level = 24, faction = "Alliance", active = set(79008) })
+  eq(r.status, D.LINE.IN_PROGRESS); eq(r.current, 2); eq(r.steps[2].state, D.STEP.ACTIVE)
+  truthy(r.steps[2].step.title:find("Burned tower"))
+  eq(D.Evaluate(cozy, { level = 24, faction = "Horde", active = set(79008) }).done, 0,
+    "the Alliance note does not move a Horde character")
+end)
+
+test("both factions' first quests are tracked and verified", function()
+  local ids = D.TrackedQuestIDs()
+  truthy(ids[79007] and ids[79008] and ids[79976])
+  eq(D.CheckQuestID(79008, "...and that note you found"), nil, "Alliance ID is expected")
+  eq(D.CheckQuestID(79007, "...and that note you found"), nil, "Horde ID is expected")
+  truthy(D.CheckQuestID(12345, "...and that note you found"), "unknown ID still flagged")
+end)
+
+test("Register rejects routes without a defaultRoute", function()
+  local ok = pcall(D.Register, { id = "bad2", routes = { Horde = { { title = "x", starts = 1 } } } })
+  eq(ok, false)
 end)
 
 test("Register rejects a step with no quest", function()
@@ -200,6 +231,24 @@ test("minimap button: tooltip shows next step, clicks route correctly", function
   env.shiftDown = true
   env.ns.MinimapButton.OnClick("LeftButton")
   eq(env.altsNs.AltsWindow.IsShown(), true, "shift-click opens alts")
+  env.save()
+end)
+
+test("Alliance character: tracker starts in Westfall, alts table shows their route", function()
+  local paladin = char({ name = "Pheulight", level = 22, class = "PALADIN", faction = "Alliance" })
+  local env = Fake.Session(ADDONS, saved, paladin)
+  local w = env.ns.App.Workable(env.ns.App.last.results)
+  eq(#w, 1, "steel is Horde-only")
+  truthy(env.ns.Tracker.Lines(w[1], 22)[2]:find("Alexston"), "Westfall step first")
+  table.insert(paladin.log, { questID = 79008, title = "...and that note you found" })
+  env.fire("QUEST_ACCEPTED", 79008)
+  truthy(not hasPrint(env, "mismatch"), "79008 is not a mismatch")
+  local step = env.ns.App.NextStep()
+  truthy(step.title:find("Burned tower"), "then the Barrens")
+  local rows = env.altsNs.Roster.Rows(env.BagQuestsAltsDB.characters, env.ns.Domain)
+  for _, row in ipairs(rows) do
+    if row.char.name == "Pheulight" then eq(row.cells[1].next, step.title, "alts row uses Alliance route") end
+  end
   env.save()
 end)
 
