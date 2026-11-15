@@ -13,6 +13,9 @@ Source and issues: this repo.
 
 ## Screenshots
 
+<details>
+<summary>Show screenshots (tracker and alts table)</summary>
+
 The next step for each questline, with the level you need and how your
 character compares:
 
@@ -25,6 +28,8 @@ Questlines your character can't start yet are listed at the bottom:
 `/bq alts` shows every character's progress (optional BagQuests_Alts module):
 
 ![Alts table](docs/screenshots/alts-table.png)
+
+</details>
 
 ## Level hints
 
