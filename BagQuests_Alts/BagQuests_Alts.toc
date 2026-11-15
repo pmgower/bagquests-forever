@@ -1,0 +1,10 @@
+## Interface: 16001
+## Title: BagQuests: Forever - Alts
+## Notes: Optional. Remembers every character's bag questline progress and shows it in one table (/bq alts). Disable this to turn alt tracking off.
+## Author: Pheubar
+## Version: 0.1.4-beta
+## Dependencies: BagQuests
+## SavedVariables: BagQuestsAltsDB
+
+Roster.lua
+AltsWindow.lua

@@ -1,0 +1,12 @@
+package-as: BagQuests
+
+move-folders:
+  BagQuests/BagQuests: BagQuests
+  BagQuests/BagQuests_Alts: BagQuests_Alts
+
+ignore:
+  - tests
+  - curseforge
+  - .github
+  - README.md
+  - "*.zip"
