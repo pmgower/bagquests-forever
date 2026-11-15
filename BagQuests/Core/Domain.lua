@@ -1,0 +1,179 @@
+-- Domain: pure Lua, no WoW API. Safe to load and test outside the game.
+--
+-- A Questline is an ordered list of Steps that ends in a bag (or other
+-- reward). A Step is a place you go. Arriving there usually turns in one quest
+-- and starts the next, so a step counts as done when the quest it turns in is
+-- completed, or when the quest it starts is in your log or completed.
+--
+-- Progress is derived, never stored: Evaluate(line, snapshot) turns a
+-- character snapshot (completed quests, active quests, level, faction, items)
+-- into step states. The same function drives the on-screen list, the map
+-- pins, and the alts table.
+local _, ns = ...
+ns = ns or {}
+
+local Domain = {}
+ns.Domain = Domain
+
+Domain.STEP = { DONE = "done", ACTIVE = "active", NEXT = "next", LATER = "later" }
+Domain.LINE = {
+  DONE = "done",               -- reward earned
+  IN_PROGRESS = "in_progress", -- at least one step done
+  AVAILABLE = "available",     -- can start now
+  TOO_LOW = "too_low",         -- below minLevel
+  WRONG_FACTION = "wrong_faction",
+}
+
+local registry, order = {}, {}
+
+-- Validates and registers a questline definition (see Data/*.lua).
+function Domain.Register(def)
+  assert(type(def) == "table" and def.id, "questline needs an id")
+  assert(type(def.steps) == "table" and #def.steps > 0, def.id .. ": needs steps")
+  for i, s in ipairs(def.steps) do
+    assert(s.turnsIn or s.starts, def.id .. " step " .. i .. ": needs turnsIn or starts")
+    assert(s.title, def.id .. " step " .. i .. ": needs a title")
+  end
+  def.minLevel = def.minLevel or 1
+  def.rewardItems = def.rewardItems or {}
+  if not registry[def.id] then table.insert(order, def.id) end
+  registry[def.id] = def
+  return def
+end
+
+function Domain.Get(id) return registry[id] end
+
+function Domain.All()
+  local list = {}
+  for _, id in ipairs(order) do table.insert(list, registry[id]) end
+  return list
+end
+
+function Domain.Reset() registry, order = {}, {} end -- tests only
+
+local function has(set, id) return id ~= nil and set ~= nil and set[id] == true end
+
+local function stepDone(step, snap)
+  if has(snap.completed, step.turnsIn) then return true end
+  if has(snap.completed, step.starts) or has(snap.active, step.starts) then return true end
+  return false
+end
+
+local function ownsReward(line, snap)
+  for _, itemID in ipairs(line.rewardItems) do
+    if snap.items and (snap.items[itemID] or 0) > 0 then return true end
+  end
+  return false
+end
+
+-- snap = { completed = {[questID]=true}, active = {[questID]=true},
+--          level = n, faction = "Horde"|"Alliance", items = {[itemID]=count} }
+-- Returns { line, status, done, total, current (index or nil), steps = {
+--          { step, index, state } } }
+function Domain.Evaluate(line, snap)
+  snap = snap or {}
+  local result = { line = line, steps = {}, total = #line.steps, done = 0 }
+
+  -- Steps are sequential: once one is done, everything before it is too
+  -- (covers quests turned in before the addon was installed).
+  local lastDone = 0
+  for i, step in ipairs(line.steps) do
+    if stepDone(step, snap) then lastDone = i end
+  end
+  if ownsReward(line, snap) or has(snap.completed, line.steps[#line.steps].turnsIn) then
+    lastDone = #line.steps
+  end
+
+  for i, step in ipairs(line.steps) do
+    local state
+    if i <= lastDone then state = Domain.STEP.DONE
+    elseif i == lastDone + 1 then
+      -- The quest you carry to this step is the one the previous step started.
+      local carrying = step.turnsIn and has(snap.active, step.turnsIn)
+      state = carrying and Domain.STEP.ACTIVE or Domain.STEP.NEXT
+      result.current = i
+    else state = Domain.STEP.LATER end
+    table.insert(result.steps, { step = step, index = i, state = state })
+  end
+  result.done = lastDone
+
+  if lastDone == #line.steps then result.status = Domain.LINE.DONE
+  elseif line.faction and snap.faction and line.faction ~= snap.faction then
+    result.status = Domain.LINE.WRONG_FACTION; result.current = nil
+  elseif lastDone > 0 then result.status = Domain.LINE.IN_PROGRESS
+  elseif (snap.level or 0) < line.minLevel then result.status = Domain.LINE.TOO_LOW
+  else result.status = Domain.LINE.AVAILABLE end
+  return result
+end
+
+-- The step to show on screen: the current step of the first unfinished
+-- questline this character can work on.
+function Domain.NextStep(snap)
+  for _, line in ipairs(Domain.All()) do
+    local r = Domain.Evaluate(line, snap)
+    if r.current and (r.status == Domain.LINE.IN_PROGRESS or r.status == Domain.LINE.AVAILABLE) then
+      return r.steps[r.current], r
+    end
+  end
+end
+
+-- One-line summary for the alts table, e.g. "3/7" or "done".
+function Domain.Summary(result)
+  if result.status == Domain.LINE.DONE then return "done" end
+  if result.status == Domain.LINE.WRONG_FACTION then return "-" end
+  if result.status == Domain.LINE.TOO_LOW then return "lvl " .. result.line.minLevel end
+  return string.format("%d/%d", result.done, result.total)
+end
+
+-- Every quest ID any registered questline cares about (for snapshots).
+function Domain.TrackedQuestIDs()
+  local ids = {}
+  for _, line in ipairs(Domain.All()) do
+    for _, s in ipairs(line.steps) do
+      if s.turnsIn then ids[s.turnsIn] = true end
+      if s.starts then ids[s.starts] = true end
+    end
+  end
+  return ids
+end
+
+function Domain.TrackedItemIDs()
+  local ids = {}
+  for _, line in ipairs(Domain.All()) do
+    for _, id in ipairs(line.rewardItems) do ids[id] = true end
+    for _, id in ipairs(line.bonusItems or {}) do ids[id] = true end
+  end
+  return ids
+end
+
+local function norm(name) return (tostring(name or ""):lower():gsub("[^%w]", "")) end
+
+-- Called when a quest is accepted. Returns nil when the ID is one we expect or
+-- the quest isn't one of ours, otherwise { name, expected, actual, line }:
+-- the quest's real ID in Forever differs from our data file.
+function Domain.CheckQuestID(questID, title)
+  if not title then return nil end
+  local key = norm(title)
+  for _, line in ipairs(Domain.All()) do
+    for id, name in pairs(line.quests or {}) do
+      if norm(name) == key then
+        if id == questID then return nil end
+        return { name = name, expected = id, actual = questID, line = line }
+      end
+    end
+  end
+  return nil
+end
+
+-- How well a character's level fits a step:
+--   "ok" at or above suggested, "low" between required and suggested,
+--   "blocked" below the questline's required level.
+Domain.FIT = { OK = "ok", LOW = "low", BLOCKED = "blocked" }
+function Domain.LevelFit(line, step, level)
+  level = level or 0
+  if level < line.minLevel then return Domain.FIT.BLOCKED end
+  if level < (step.suggested or line.minLevel) then return Domain.FIT.LOW end
+  return Domain.FIT.OK
+end
+
+return Domain
