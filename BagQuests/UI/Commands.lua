@@ -43,6 +43,7 @@ builtins = {
       App.Refresh(); App.Print("minimap pin " .. onOff(s.minimapPins)) end },
   { "lock", "Lock or unlock the tracker position", function()
       local s = App.Settings(); s.locked = not s.locked; App.Print("tracker " .. (s.locked and "locked" or "unlocked")) end },
+  { "settings", "Open the settings page (Options > AddOns)", function() ns.SettingsPanel.Open() end },
   { "help", "This list", function()
       App.Print("v" .. App.VERSION .. " commands:")
       for _, c in ipairs(builtins) do App.Print(string.format("  /bq %s - %s", c[1], c[2])) end

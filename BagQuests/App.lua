@@ -6,18 +6,24 @@ local App = {}
 ns.App = App
 _G.BagQuests = App
 
-App.VERSION = "0.1.5-beta"
+App.VERSION = "0.2.0-beta"
 local Domain = ns.Domain
 App.Domain = Domain
 local db
 local listeners, commands = {}, {}
 
-App.DEFAULTS = { tracker = true, minimapPins = true, showLaterPins = true, locked = false }
+App.DEFAULTS = { tracker = true, minimapPins = true, showLaterPins = true, locked = false,
+  minimapButton = true }
 
 function App.Print(msg) DEFAULT_CHAT_FRAME:AddMessage("|cffe0a040BagQuests|r " .. tostring(msg)) end
 
 function App.Settings() return db.settings end
 function App.DB() return db end
+
+-- Modules add rows to the settings page: fn(addCheckbox) runs when it's built.
+local settingsHooks = {}
+function App.OnSettings(fn) table.insert(settingsHooks, fn) end
+function App.SettingsHooks() return settingsHooks end
 
 -- fn(snapshot, results, character) runs after every refresh.
 function App.OnRefresh(fn) table.insert(listeners, fn) end
@@ -129,6 +135,8 @@ frame:SetScript("OnEvent", function(_, event, arg1)
     for _, e in ipairs({ "PLAYER_ENTERING_WORLD", "QUEST_ACCEPTED", "QUEST_TURNED_IN", "QUEST_REMOVED",
       "QUEST_LOG_UPDATE", "BAG_UPDATE_DELAYED", "PLAYER_LEVEL_UP" }) do frame:RegisterEvent(e) end
     if ns.Tracker then ns.Tracker.Init(db.settings) end
+    if ns.SettingsPanel then ns.SettingsPanel.Init(db.settings) end
+    if ns.MinimapButton then ns.MinimapButton.Init(db) end
     App.Refresh()
   elseif event == "QUEST_ACCEPTED" then
     App.CheckAccepted(arg1)

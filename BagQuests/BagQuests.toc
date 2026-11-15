@@ -2,7 +2,7 @@
 ## Title: BagQuests: Forever
 ## Notes: Tracks the quest chains that reward bags (Cozy Sleeping Bag, Stronger than Steel) with an on-screen next step and map pins.
 ## Author: Pheubar
-## Version: 0.1.5-beta
+## Version: 0.2.0-beta
 ## SavedVariables: BagQuestsDB
 ## IconTexture: Interface\Icons\INV_Misc_Bag_10
 ## OptionalDeps: TomTom
@@ -12,6 +12,8 @@ Libs\LibStub\LibStub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
 Libs\HereBeDragons\HereBeDragons-2.0.lua
 Libs\HereBeDragons\HereBeDragons-Pins-2.0.lua
+Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 
 Core\Domain.lua
 Data\CozySleepingBag.lua
@@ -21,4 +23,6 @@ Adapters\Waypoints.lua
 Adapters\Pins.lua
 App.lua
 UI\Tracker.lua
+UI\SettingsPanel.lua
+UI\MinimapButton.lua
 UI\Commands.lua

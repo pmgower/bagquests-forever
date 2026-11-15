@@ -56,6 +56,13 @@ if _G.BagQuests then
     Roster.Save(BagQuestsAltsDB.characters, who, snap, time and time() or os.time())
     if ns.AltsWindow then ns.AltsWindow.RefreshIfShown() end
   end)
+  App.OnSettings(function(addCheckbox)
+    BagQuestsAltsDB = BagQuestsAltsDB or { characters = {} }
+    BagQuestsAltsDB.settings = BagQuestsAltsDB.settings or {}
+    addCheckbox(BagQuestsAltsDB.settings, "hideSurnames", "Alts table: first names only",
+      "Hide second names (e.g. 'Undertaker') to make the alts table narrower. Same as /bq surnames.",
+      false, function() if ns.AltsWindow then ns.AltsWindow.RefreshIfShown() end end)
+  end)
   App.RegisterCommand("surnames", function()
     BagQuestsAltsDB = BagQuestsAltsDB or { characters = {} }
     BagQuestsAltsDB.settings = BagQuestsAltsDB.settings or {}

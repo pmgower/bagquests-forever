@@ -1,4 +1,4 @@
-# BagQuests: Forever (beta 0.1.5)
+# BagQuests: Forever (beta 0.2.0)
 
 Tracks the WoW Forever quest chains that reward bags. It shows your next step on
 screen (RestedXP style), puts pins on the world map and minimap, and has an
@@ -39,6 +39,15 @@ Each step on the tracker shows **Req** (the level needed to start the questline)
 yet show at the bottom as "unlocks at N". The alts table adds "sugg N" when a
 character is under the suggested level for its current step.
 
+## Settings and minimap button
+
+Options > AddOns > **BagQuests: Forever** (or `/bq settings`) has checkboxes for
+the tracker, tracker lock, minimap button, minimap pin, later-step pins, and
+first-names-only in the alts table.
+
+The minimap button: **left-click** tracker on/off, **right-click** settings,
+**shift-click** alts table; hover shows your next step.
+
 ## Two addons
 
 | Folder | What it does |
@@ -58,6 +67,7 @@ character is under the suggested level for its current step.
 | `/bq pins` / `/bq minimap` / `/bq lock` | Toggle later-step pins, the minimap pin, tracker lock |
 | `/bq surnames` | Show or hide second names in the alts table (shown by default) |
 | `/bq forget <name>` | Drop a character from the alts table |
+| `/bq settings` | Open the settings page |
 
 ## Beta test plan
 
