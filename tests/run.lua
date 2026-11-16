@@ -115,6 +115,11 @@ test("a skipped step counts as done; skipping the last step finishes the line", 
     "skips are per questline")
 end)
 
+test("Stronger than Steel: required 23 to pick up, quest level 29", function()
+  eq(steel.minLevel, 23); eq(steel.steps[1].suggested, 29); eq(steel.steps[2].suggested, 29)
+  eq(D.LevelFit(steel, steel.steps[1], 25), D.FIT.LOW, "level 25 can take it but is under the quest level")
+end)
+
 test("Register rejects a step with no quest", function()
   local ok = pcall(D.Register, { id = "bad", steps = { { title = "x" } } })
   eq(ok, false)
@@ -152,6 +157,8 @@ test("every data file: valid steps, quest names listed, slots and pins set", fun
           seenQuest[q] = line.id
         end
         truthy(st.mapID or st.where, line.id .. " step " .. i .. ": needs a map pin or a where text")
+        truthy(st.suggested and st.suggested >= line.minLevel,
+          line.id .. " step " .. i .. ": suggested level (the quest's level) is at least the required level")
         if st.mapID then
           truthy(st.x > 0 and st.x < 100 and st.y > 0 and st.y < 100, line.id .. " step " .. i .. ": coords 0-100")
         end

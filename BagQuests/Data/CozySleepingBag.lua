@@ -2,20 +2,25 @@
 -- stops swap places, and the first quest has a different ID per faction.
 -- Sources: wowforever.gg, forevermastery.com (quest IDs from Wowhead),
 -- pro-gamer.gg, space4games.com; Alliance route from warcraft.wiki.gg,
--- warcrafttavern.com and wow.gg. Horde 79007 is verified in game; the rest is
--- NOT yet: run /bq verify to check the quest IDs on your character.
+-- warcrafttavern.com and wow.gg. Objects, coordinates and quest levels checked
+-- against the Forever QuestieDB (2026-11-16). Horde 79007 is verified in game;
+-- the rest is NOT yet: run /bq verify to check the quest IDs on your character.
 -- mapIDs are uiMapIDs (C_Map); coordinates are 0-100.
 local _, ns = ...
 
--- suggested = the Wowhead quest level of the quest you carry to that step
+-- suggested = the quest level of the quest you carry to that step (or start,
+-- on step 1). Both first stops have Burned-Out Remains and a Nailed Plank: the
+-- first stop only uses the remains; the second turns the note in at the
+-- remains and starts Stepping Stones from the plank.
+local FIRST, SECOND = "Burned-Out Remains", "Burned-Out Remains, then the Nailed Plank"
 local function barrensTower(t)
-  t.title, t.object = "Burned tower south of Camp Taurajo", "Burned-Out Remains"
-  t.mapID, t.x, t.y = 1413, 46.1, 74.3
+  t.title = "Burned tower south of Camp Taurajo"
+  t.mapID, t.x, t.y = 1413, 46.4, 73.9
   return t
 end
 local function westfallCart(t)
-  t.title, t.object = "Wrecked cart, Alexston Farmstead", "Nailed Plank"
-  t.mapID, t.x, t.y = 1436, 37.1, 50.1
+  t.title = "Wrecked cart, Alexston Farmstead"
+  t.mapID, t.x, t.y = 1436, 37.4, 50.7
   return t
 end
 
@@ -29,9 +34,10 @@ local TAIL = {
     { title = "Stonewrought Dam, north face", suggested = 32, object = "Carved Figurine",
       mapID = 1432, x = 49.4, y = 12.9, turnsIn = 79974, starts = 79975,
       hint = "Drop from the upper walkway onto the ledge. Horde: Alliance guards nearby." },
-    { title = "Broken cart at Thoradin's Wall", suggested = 32, object = "Broken cart",
-      mapID = 1424, x = 87.4, y = 49.6, turnsIn = 79975, starts = 79976 },
-    { title = "Hanging Messenger Bag, Arathi", suggested = 32, object = "Hastily Rolled-Up Satchel",
+    { title = "Messenger Bag atop Thoradin's Wall, Arathi", suggested = 32, object = "Messenger Bag",
+      mapID = 1417, x = 22.5, y = 24.1, turnsIn = 79975, starts = 79976,
+      hint = "Climb onto the wall using the broken cart on the Hillsbrad side, then follow it to the platform." },
+    { title = "Satchel under the Messenger Bag, same platform", suggested = 32, object = "Hastily Rolled-Up Satchel",
       mapID = 1417, x = 22.5, y = 24.2, turnsIn = 79976,
       reward = "Cozy Sleeping Bag" },
 }
@@ -58,12 +64,12 @@ ns.Domain.Register({
   defaultRoute = "Horde", -- used when the faction is unknown
   routes = {
     Horde = route(
-      barrensTower({ suggested = 22, starts = 79007 }),
-      westfallCart({ suggested = 24, turnsIn = 79007, starts = 79192,
+      barrensTower({ suggested = 22, object = FIRST, starts = 79007 }),
+      westfallCart({ suggested = 22, object = SECOND, turnsIn = 79007, starts = 79192,
         hint = "Zeppelin to Grom'gol, swim north along the coast." })),
     Alliance = route(
-      westfallCart({ suggested = 22, starts = 79008 }),
-      barrensTower({ suggested = 24, turnsIn = 79008, starts = 79192,
+      westfallCart({ suggested = 22, object = FIRST, starts = 79008 }),
+      barrensTower({ suggested = 22, object = SECOND, turnsIn = 79008, starts = 79192,
         hint = "Boat from Menethil Harbor to Theramore, then run west." })),
   },
 })
