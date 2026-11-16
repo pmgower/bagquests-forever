@@ -72,8 +72,8 @@ function Fake.Session(root, saved, char)
       return {
         RemoveAllWorldMapIcons = function() pins.world = {} ; env.pinsPlaced.world = pins.world end,
         RemoveAllMinimapIcons = function() pins.mini = {} ; env.pinsPlaced.mini = pins.mini end,
-        AddWorldMapIconMap = function(_, _, icon, m, x, y) table.insert(pins.world, { m = m, x = x, y = y, step = icon.step }) end,
-        AddMinimapIconMap = function(_, _, icon, m, x, y) table.insert(pins.mini, { m = m, x = x, y = y, step = icon.step }) end,
+        AddWorldMapIconMap = function(_, _, icon, m, x, y) table.insert(pins.world, { m = m, x = x, y = y, step = icon.step, icon = icon }) end,
+        AddMinimapIconMap = function(_, _, icon, m, x, y) table.insert(pins.mini, { m = m, x = x, y = y, step = icon.step, icon = icon }) end,
       }
     end
   end

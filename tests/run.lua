@@ -220,6 +220,26 @@ test("login: tracker shows each workable line's first step and pins", function()
   env.save()
 end)
 
+test("minimap pins never reuse a world map frame (pin stuck to the player)", function()
+  local env = Fake.Session(ADDONS, saved, warlock)
+  local cb = env.settingsUI.checkboxes
+  local role = {}
+  local function check()
+    for _, p in ipairs(env.pinsPlaced.world) do
+      truthy(role[p.icon] ~= "mini", "world map icon was a minimap icon before")
+      role[p.icon] = "world"
+    end
+    for _, p in ipairs(env.pinsPlaced.mini) do
+      truthy(role[p.icon] ~= "world", "minimap icon was a world map icon before")
+      role[p.icon] = "mini"
+    end
+  end
+  check()
+  -- Changing the pin set reorders frames; the old single pool swapped roles here.
+  for _, v in ipairs({ false, true, false, true }) do cb.showLaterPins:SetValue(v); check() end
+  cb.minimapPins:SetValue(false); check(); cb.minimapPins:SetValue(true); check()
+end)
+
 test("accepting the note moves the tracker to Westfall", function()
   table.insert(warlock.log, { questID = 79007, title = "...and that note you found" })
   local env = Fake.Session(ADDONS, saved, warlock)
