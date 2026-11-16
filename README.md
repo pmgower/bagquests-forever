@@ -1,11 +1,25 @@
-# BagQuests: Forever (beta 0.2.0)
+# BagQuests: Forever (beta 0.3.0)
 
 Tracks the WoW Forever quest chains that reward bags. It shows your next step on
 screen (RestedXP style), puts pins on the world map and minimap, and has an
 optional alts table.
 
-Questlines so far: **Cozy Sleeping Bag** (plus the Old Toolbox along the way)
-and **Stronger than Steel** (Spidersilk Sack 10 reagent / Pouch 12).
+Questlines so far (every one rewards a bag of 10+ slots):
+
+| Bag | Slots | Faction | Req level |
+| --- | --- | --- | --- |
+| Old Toolbox / Sturdy Lunchbox, on the way to the **Cozy Sleeping Bag** | 12 | both | 14 |
+| **Deviate Hide Pack** (Wailing Caverns hides) | 10 | both | 13 |
+| **Hunting Satchel** (Vyrin's Revenge, Loch Modan) | 10 | Alliance | 11 |
+| **Gunnysack of the Night Watch** (Duskwood) | 10* | Alliance | 18 |
+| **Ooze-covered Bag** (Menethil Harbor) | 10* | Alliance | 19 |
+| Spidersilk Pouch / Sack (**Stronger than Steel**) | 12 / 10 reagent | Horde | 23 |
+| **Explorer's Knapsack** (Cortello's Riddle) | 14* | both | 35 |
+| **Thawpelt Sack** (The Platinum Discs, Uldaman) | 14* | both | 40 |
+| **Hyjal Postal Satchel** (new in Forever) | 18 | both | 56 |
+
+\* Slot count from Classic sources, not yet confirmed in Forever. Quest IDs and
+coordinates come from the Forever Questie database; `/bq verify` confirms them in game.
 
 **Download:** [BagQuests: Forever on CurseForge](https://www.curseforge.com/projects/1808477)
 (awaiting CurseForge approval; the link works once the project is live).

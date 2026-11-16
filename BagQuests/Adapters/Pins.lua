@@ -49,7 +49,9 @@ function Pins.Refresh(results, settings, level)
   for i = 1, used do pool[i]:Hide() end
   used = 0
   for _, r in ipairs(results) do
-    if r.current then
+    -- Only lines you can work on now; level-locked lines would fill the map
+    -- with pins you can't use yet (the tracker lists them as "unlocks at").
+    if r.current and r.status ~= ns.Domain.LINE.TOO_LOW then
       for _, entry in ipairs(r.steps) do
         local s = entry.step
         local isCurrent = entry.index == r.current

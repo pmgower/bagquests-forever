@@ -110,6 +110,63 @@ test("Register rejects a step with no quest", function()
   eq(ok, false)
 end)
 
+---------------------------------------------------------------- data files
+-- Every data file the TOC loads, checked for the mistakes a typo would cause.
+local function tocDataFiles()
+  local files = {}
+  for line in io.lines(ROOT .. "BagQuests/BagQuests.toc") do
+    local f = line:match("^Data\\(.+%.lua)")
+    if f then table.insert(files, f) end
+  end
+  return files
+end
+
+test("every data file: valid steps, quest names listed, slots and pins set", function()
+  local dns = {}
+  assert(loadfile(ROOT .. "BagQuests/Core/Domain.lua"))("BagQuests", dns)
+  local files = tocDataFiles()
+  truthy(#files >= 9, "TOC lists the data files")
+  for _, f in ipairs(files) do assert(loadfile(ROOT .. "BagQuests/Data/" .. f))("BagQuests", dns) end
+  local seenQuest = {}
+  for _, line in ipairs(dns.Domain.All()) do
+    truthy(line.slots and line.slots >= 10, line.id .. ": slots >= 10")
+    truthy(#line.rewardItems > 0, line.id .. ": reward item")
+    local routes = line.routes or { only = line.steps }
+    for name, steps in pairs(routes) do
+      local last = steps[#steps]
+      truthy(last.turnsIn and last.reward, line.id .. " " .. name .. ": last step turns in the reward quest")
+      for i, st in ipairs(steps) do
+        for _, q in ipairs({ st.turnsIn, st.starts }) do
+          truthy(line.quests[q], line.id .. " step " .. i .. ": quest " .. q .. " has a name for /bq verify")
+          truthy(seenQuest[q] == nil or seenQuest[q] == line.id, "quest " .. q .. " used by two questlines")
+          seenQuest[q] = line.id
+        end
+        truthy(st.mapID or st.where, line.id .. " step " .. i .. ": needs a map pin or a where text")
+        if st.mapID then
+          truthy(st.x > 0 and st.x < 100 and st.y > 0 and st.y < 100, line.id .. " step " .. i .. ": coords 0-100")
+        end
+        if i > 1 and st.turnsIn and steps[i - 1].starts then
+          -- consecutive steps chain: the quest you carry was started one step earlier,
+          -- unless the previous step only turned something in (a new giver starts the next quest)
+          truthy(steps[i - 1].starts == st.turnsIn, line.id .. " step " .. i .. ": turns in what step " .. (i - 1) .. " started")
+        end
+      end
+    end
+  end
+end)
+
+test("Thawpelt Sack: Alliance turns in at Ironforge, Horde at Thunder Bluff", function()
+  local dns = {}
+  assert(loadfile(ROOT .. "BagQuests/Core/Domain.lua"))("BagQuests", dns)
+  assert(loadfile(ROOT .. "BagQuests/Data/PlatinumDiscs.lua"))("BagQuests", dns)
+  local D2 = dns.Domain
+  local line = D2.Get("platinum_discs")
+  eq(D2.StepsFor(line, "Alliance")[4].mapID, 1455); eq(D2.StepsFor(line, "Horde")[4].mapID, 1456)
+  local r = D2.Evaluate(line, { level = 45, faction = "Alliance", completed = set(2278), active = set(2279) })
+  eq(r.current, 3); eq(r.steps[3].state, D2.STEP.ACTIVE)
+  eq(D2.Evaluate(line, { level = 45, faction = "Horde", completed = set(2440) }).status, D2.LINE.DONE)
+end)
+
 ---------------------------------------------------------------- game sim
 local Fake = dofile(ROOT .. "tests/wow.lua")
 local ADDONS = ROOT
@@ -127,15 +184,21 @@ end
 local warlock = char({ name = "Pheuneral", surname = "Undertaker", level = 24, class = "WARLOCK" })
 local hunter = char({ name = "Pheuhunt", level = 15, class = "HUNTER" })
 
-test("login: tracker shows both lines' first steps and pins", function()
+local function lineIds(list)
+  local ids = {}
+  for _, r in ipairs(list) do table.insert(ids, r.line.id) end
+  return table.concat(ids, ",")
+end
+
+test("login: tracker shows each workable line's first step and pins", function()
   local env = Fake.Session(ADDONS, saved, warlock)
   local w = env.ns.App.Workable(env.ns.App.last.results)
-  eq(#w, 2, "workable lines")
+  eq(lineIds(w), "cozy_sleeping_bag,stronger_than_steel,deviate_hides", "workable lines")
   local lines = env.ns.Tracker.Lines(w[1], 24)
   truthy(lines[1]:find("Cozy Sleeping Bag"), "title line")
   truthy(lines[2]:find("Burned tower"), "step line")
   truthy(lines[3]:find("Req 14") and lines[3]:find("Suggested 22") and lines[3]:find("good level"), "level line")
-  eq(#env.pinsPlaced.mini, 2, "one minimap pin per line")
+  eq(#env.pinsPlaced.mini, 3, "one minimap pin per line")
   truthy(#env.pinsPlaced.world > 2, "later steps on world map")
   env.save()
 end)
@@ -175,7 +238,8 @@ test("second character joins the alts table", function()
   truthy(grid[3][4]:find("lvl 23"), "hunter too low for steel")
   truthy(grid[3][3]:find("sugg 22"), "hunter flagged low for cozy step 1")
   local locked = env.ns.App.Locked(env.ns.App.last.results)
-  eq(#locked, 1, "steel shown as locked for the hunter")
+  eq(lineIds(locked), "stronger_than_steel,cortellos_riddle,platinum_discs,hyjal_postal",
+    "level-locked lines for the level 15 hunter; Alliance-only lines are left out")
   env.SlashCmdList.BAGQUESTS("alts")
   eq(env.altsNs.AltsWindow.IsShown(), true, "first /bq alts opens the window")
   env.SlashCmdList.BAGQUESTS("alts")
@@ -187,7 +251,7 @@ test("finishing the chain clears it from the tracker", function()
   warlock.completed[79976] = true; warlock.items[211527] = 1; warlock.log = {}
   local env = Fake.Session(ADDONS, saved, warlock)
   local w = env.ns.App.Workable(env.ns.App.last.results)
-  eq(#w, 1); eq(w[1].line.id, "stronger_than_steel")
+  eq(lineIds(w), "stronger_than_steel,deviate_hides")
   env.SlashCmdList.BAGQUESTS("verify")
   truthy(hasPrint(env, "79976 This Must Be the Place: .*completed"), "verify lists completion")
   env.save()
@@ -238,7 +302,8 @@ test("Alliance character: tracker starts in Westfall, alts table shows their rou
   local paladin = char({ name = "Pheulight", level = 22, class = "PALADIN", faction = "Alliance" })
   local env = Fake.Session(ADDONS, saved, paladin)
   local w = env.ns.App.Workable(env.ns.App.last.results)
-  eq(#w, 1, "steel is Horde-only")
+  eq(lineIds(w), "cozy_sleeping_bag,deviate_hides,vyrins_revenge,night_watch,digging_through_the_ooze",
+    "steel is Horde-only; Alliance bag quests appear")
   truthy(env.ns.Tracker.Lines(w[1], 22)[2]:find("Alexston"), "Westfall step first")
   table.insert(paladin.log, { questID = 79008, title = "...and that note you found" })
   env.fire("QUEST_ACCEPTED", 79008)

@@ -5,6 +5,7 @@ local _, ns = ...
 ns.Domain.Register({
   id = "stronger_than_steel",
   title = "Stronger than Steel",
+  slots = 12, -- Spidersilk Pouch (or the 10-slot reagent Sack)
   faction = "Horde",
   minLevel = 23,   -- guides disagree: one table says 30
   rewardItems = { 276892, 276891 }, -- Spidersilk Sack (10 reagent) / Spidersilk Pouch (12)

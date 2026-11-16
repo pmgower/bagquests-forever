@@ -44,6 +44,7 @@ end
 ns.Domain.Register({
   id = "cozy_sleeping_bag",
   title = "Cozy Sleeping Bag",
+  slots = 12, -- Old Toolbox or Sturdy Lunchbox at step 3; the sleeping bag itself is a toy
   faction = nil, -- both factions, each with its own route
   minLevel = 14,   -- required to pick up the first note
   rewardItems = { 211527 },                 -- Cozy Sleeping Bag
