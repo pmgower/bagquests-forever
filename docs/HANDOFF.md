@@ -35,12 +35,15 @@ Everything else in `Data/` comes from community guides.
    `routes` per faction. Alliance swaps only the first two stops (Westfall, then the Barrens)
    and starts with quest 79008, not 79007; Stonetalon onward is shared. Not verified in game.
 2. Confirm remaining quest IDs/coords in play (`/bq verify`).
-3. ~~More bag quests.~~ 0.3.0-beta adds Deviate Hide Pack, Hunting Satchel, Night Watch,
+3. ~~More bag quests.~~ 0.2.0-beta also adds Deviate Hide Pack, Hunting Satchel, Night Watch,
    Ooze-covered Bag, Explorer's Knapsack, Thawpelt Sack and Hyjal Postal Satchel. Data comes
    from Paul's installed Forever QuestieDB (`AddOns\QuestieDB\QuestieDB_Forever.toc`: CBOR +
    base64 rows in TOC metadata; item field 6 = questRewards). Never assume Classic facts hold in
    Forever. Not added: Demon Hide Sack (16, long level 45-60 group chain), Supply Bag (Argent
    Dawn rep), Darkmoon Storage Box (tickets), bags under 10 slots.
-3b. Pick which questlines to track, skip a step, filter by bag size and level (Paul, 2026-11-16).
-4. First tagged release through the pipeline.
+3b. ~~Pick which questlines to track, skip a step.~~ Done (Track checkboxes, `/bq track`,
+   right-click or `/bq skip`, `/bq unskip`; skips per character in `BagQuestsDB.skips`).
+   Still to do: filter by minimum bag size and level (each line has `slots` and `minLevel`).
+4. First tagged release through the pipeline. Paul's rule: the first release after CurseForge
+   approves 0.1.4-beta is **0.2.0-beta** with everything in it (no skipping numbers before that).
 5. Later/nice-to-have: professions per alt (Altoholic-style), sharing with friends.

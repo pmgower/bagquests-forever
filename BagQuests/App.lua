@@ -6,7 +6,7 @@ local App = {}
 ns.App = App
 _G.BagQuests = App
 
-App.VERSION = "0.3.0-beta"
+App.VERSION = "0.2.0-beta"
 local Domain = ns.Domain
 App.Domain = Domain
 local db
@@ -53,10 +53,47 @@ end
 
 ---------------------------------------------------------------- use cases
 
+-- Questlines the player chose to track (Settings: "Track: ..."; /bq track).
+function App.IsTracked(line) return not (db and db.settings["track_" .. line.id] == false) end
+function App.SetTracked(line, on) db.settings["track_" .. line.id] = on and true or false end
+
+function App.Lines()
+  local list = {}
+  for _, line in ipairs(Domain.All()) do
+    if App.IsTracked(line) then table.insert(list, line) end
+  end
+  return list
+end
+
 function App.Evaluate(snap)
   local results = {}
-  for _, line in ipairs(Domain.All()) do table.insert(results, Domain.Evaluate(line, snap)) end
+  for _, line in ipairs(App.Lines()) do table.insert(results, Domain.Evaluate(line, snap)) end
   return results
+end
+
+-- Skipped steps are per character: { [lineID] = last skipped step index }.
+function App.Skips()
+  local who = App.Character()
+  local key = tostring(who.name) .. "-" .. tostring(who.realm)
+  db.skips[key] = db.skips[key] or {}
+  return db.skips[key]
+end
+
+-- Marks the current step of a result as done and moves to the next one.
+function App.SkipStep(r)
+  if not (r and r.current) then return false end
+  App.Skips()[r.line.id] = r.current
+  App.Print(string.format("skipped \"%s\" (%s step %d). /bq unskip to undo.",
+    r.steps[r.current].step.title, r.line.title, r.current))
+  App.Refresh()
+  return true
+end
+
+function App.Unskip()
+  local skips, n = App.Skips(), 0
+  for id in pairs(skips) do skips[id] = nil; n = n + 1 end
+  App.Refresh()
+  return n
 end
 
 -- Lines this character can work on right now, current step first.
@@ -84,6 +121,7 @@ end
 function App.Refresh()
   if not db then return end
   local snap = ns.QuestState.Snapshot()
+  snap.skipped = App.Skips()
   local results = App.Evaluate(snap)
   App.last = { snap = snap, results = results }
   if ns.Tracker then ns.Tracker.Render(App.Workable(results), db.settings, snap.level, App.Locked(results)) end
@@ -132,6 +170,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
     db.settings = db.settings or {}
     for k, v in pairs(App.DEFAULTS) do if db.settings[k] == nil then db.settings[k] = v end end
     db.mismatches = db.mismatches or {}
+    db.skips = db.skips or {}
     for _, e in ipairs({ "PLAYER_ENTERING_WORLD", "QUEST_ACCEPTED", "QUEST_TURNED_IN", "QUEST_REMOVED",
       "QUEST_LOG_UPDATE", "BAG_UPDATE_DELAYED", "PLAYER_LEVEL_UP" }) do frame:RegisterEvent(e) end
     if ns.Tracker then ns.Tracker.Init(db.settings) end

@@ -1,4 +1,4 @@
-# BagQuests: Forever (beta 0.3.0)
+# BagQuests: Forever (beta 0.2.0)
 
 Tracks the WoW Forever quest chains that reward bags. It shows your next step on
 screen (RestedXP style), puts pins on the world map and minimap, and has an
@@ -53,6 +53,16 @@ Each step on the tracker shows **Req** (the level needed to start the questline)
 yet show at the bottom as "unlocks at N". The alts table adds "sugg N" when a
 character is under the suggested level for its current step.
 
+## Choosing questlines and skipping steps
+
+Settings has a **Track** checkbox for every questline (with its bag size and
+level). Untick the ones you don't care about and they leave the tracker, the
+map and the alts table. `/bq track` does the same from chat.
+
+**Right-click** a tracker line to skip that step (like RestedXP), for when the
+game doesn't count something you did or you want to jump ahead. Skips are per
+character; `/bq unskip` undoes them.
+
 ## Settings and minimap button
 
 Options > AddOns > **BagQuests: Forever** (or `/bq settings`) has checkboxes for
@@ -81,6 +91,9 @@ The minimap button: **left-click** tracker on/off, **right-click** settings,
 | `/bq pins` / `/bq minimap` / `/bq lock` | Toggle later-step pins, the minimap pin, tracker lock |
 | `/bq surnames` | Show or hide second names in the alts table (shown by default) |
 | `/bq forget <name>` | Drop a character from the alts table |
+| `/bq track` / `/bq track <n>` | List questlines / turn the nth one on or off |
+| `/bq skip` / `/bq skip <n>` | Skip the current step of the top (or nth) tracker line |
+| `/bq unskip` | Undo every skipped step for this character |
 | `/bq settings` | Open the settings page |
 
 ## Beta test plan

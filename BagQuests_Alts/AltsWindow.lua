@@ -17,11 +17,18 @@ function AltsWindow.DisplayName(char, opts)
   return char.name
 end
 
+-- Only the questlines the player tracks get a column.
+local function shownLines(Domain)
+  if App and App.Lines then return App.Lines() end
+  return Domain.All()
+end
+
 function AltsWindow.Grid(store, Domain, opts)
+  local lines = shownLines(Domain)
   local header = { "Character", "Lvl" }
-  for _, line in ipairs(Domain.All()) do table.insert(header, line.title) end
+  for _, line in ipairs(lines) do table.insert(header, line.title) end
   local grid = { header }
-  for _, row in ipairs(ns.Roster.Rows(store, Domain)) do
+  for _, row in ipairs(ns.Roster.Rows(store, Domain, lines)) do
     local cls = row.char.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[row.char.class]
     local shown = AltsWindow.DisplayName(row.char, opts)
     local name = cls and cls.colorStr and ("|c" .. cls.colorStr .. shown .. "|r") or shown

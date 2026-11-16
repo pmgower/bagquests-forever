@@ -69,10 +69,20 @@ function Tracker.Init(settings)
     b:SetSize(244, 16)
     b.text = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     b.text:SetPoint("TOPLEFT"); b.text:SetJustifyH("LEFT"); b.text:SetWidth(244)
-    b:SetScript("OnClick", function(self) if self.step then ns.Waypoints.Set(self.step) end end)
+    -- Left-click: waypoint. Right-click: skip this step (RestedXP style).
+    if b.RegisterForClicks then b:RegisterForClicks("LeftButtonUp", "RightButtonUp") end
+    b:SetScript("OnClick", function(self, button)
+      if button == "RightButton" then
+        if self.result then ns.App.SkipStep(self.result) end
+      elseif self.step then
+        ns.Waypoints.Set(self.step)
+      end
+    end)
     rows[i] = b
   end
 end
+
+function Tracker.RowAt(i) return rows and rows[i] end -- tests
 
 -- workable = lines with a current step; locked = too-low lines (shown dim).
 function Tracker.Render(workable, settings, level, locked)
@@ -83,7 +93,7 @@ function Tracker.Render(workable, settings, level, locked)
   for i = 1, MAX_LINES do
     local b, r = rows[i], workable[i]
     if r then
-      b.step = r.steps[r.current].step
+      b.step, b.result = r.steps[r.current].step, r
       b.text:SetText(table.concat(Tracker.Lines(r, level), "\n"))
       local h = (b.text.GetStringHeight and b.text:GetStringHeight() or 60) + 4
       b:SetHeight(h)
