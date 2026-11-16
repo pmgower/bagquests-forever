@@ -105,6 +105,16 @@ test("Register rejects routes without a defaultRoute", function()
   eq(ok, false)
 end)
 
+test("a skipped step counts as done; skipping the last step finishes the line", function()
+  local r = D.Evaluate(cozy, { level = 24, faction = "Horde", skipped = { cozy_sleeping_bag = 2 } })
+  eq(r.done, 2); eq(r.current, 3); eq(r.skipped, 2); eq(r.steps[2].state, D.STEP.DONE)
+  eq(D.Evaluate(cozy, { level = 30, completed = set(79974), skipped = { cozy_sleeping_bag = 2 } }).current, 6,
+    "real progress past the skip wins")
+  eq(D.Evaluate(cozy, { skipped = { cozy_sleeping_bag = 99 } }).status, D.LINE.DONE)
+  eq(D.Evaluate(steel, { level = 30, faction = "Horde", skipped = { cozy_sleeping_bag = 2 } }).done, 0,
+    "skips are per questline")
+end)
+
 test("Register rejects a step with no quest", function()
   local ok = pcall(D.Register, { id = "bad", steps = { { title = "x" } } })
   eq(ok, false)
@@ -315,6 +325,47 @@ test("Alliance character: tracker starts in Westfall, alts table shows their rou
     if row.char.name == "Pheulight" then eq(row.cells[1].next, step.title, "alts row uses Alliance route") end
   end
   env.save()
+end)
+
+test("tracking choices: untick a questline in settings or with /bq track", function()
+  local env = Fake.Session(ADDONS, saved, warlock)
+  local cb = env.settingsUI.checkboxes
+  truthy(cb.track_deviate_hides and cb.track_hyjal_postal, "one Track checkbox per questline")
+  truthy(cb.track_hyjal_postal.label:find("18 slots") and cb.track_hyjal_postal.label:find("lvl 56"), "label shows slots and level")
+  cb.track_deviate_hides:SetValue(false)
+  eq(lineIds(env.ns.App.Workable(env.ns.App.last.results)), "stronger_than_steel", "deviate gone from tracker")
+  for _, p in ipairs(env.pinsPlaced.world) do truthy(not p.step.title:find("Nalpak"), "and from the map") end
+  local grid = env.altsNs.AltsWindow.Grid(env.BagQuestsAltsDB.characters, env.ns.Domain)
+  for _, h in ipairs(grid[1]) do truthy(h ~= "Deviate Hide Pack", "and from the alts table") end
+  env.SlashCmdList.BAGQUESTS("track")
+  truthy(hasPrint(env, "%[ %] Deviate Hide Pack"), "/bq track lists it as off")
+  env.SlashCmdList.BAGQUESTS("track 3")
+  truthy(hasPrint(env, "Deviate Hide Pack: tracked"), "/bq track 3 turns it back on")
+  eq(cb.track_deviate_hides.tbl.track_deviate_hides, true)
+  env.save()
+end)
+
+test("skip step: right-click a tracker line, /bq skip, /bq unskip; per character", function()
+  local env = Fake.Session(ADDONS, saved, warlock)
+  local r = env.ns.App.Workable(env.ns.App.last.results)[1]
+  eq(r.line.id, "stronger_than_steel"); eq(r.current, 1)
+  local row = env.ns.Tracker.RowAt(1)
+  row._onOnClick(row, "RightButton")
+  truthy(hasPrint(env, "skipped"), "skip printed")
+  r = env.ns.App.Workable(env.ns.App.last.results)[1]
+  eq(r.current, 2, "tracker moved to step 2")
+  env.SlashCmdList.BAGQUESTS("skip 2")
+  eq(env.ns.App.Workable(env.ns.App.last.results)[2].current, 2, "/bq skip 2 skips the 2nd line (deviate)")
+  env.save()
+  local env2 = Fake.Session(ADDONS, saved, hunter)
+  local hr = env2.ns.App.last.results
+  for _, x in ipairs(hr) do if x.line.id == "deviate_hides" then eq(x.current, 1, "hunter keeps their own progress") end end
+  env2.save()
+  local env3 = Fake.Session(ADDONS, saved, warlock)
+  eq(env3.ns.App.Workable(env3.ns.App.last.results)[1].current, 2, "skip survives a relog")
+  env3.SlashCmdList.BAGQUESTS("unskip")
+  eq(env3.ns.App.Workable(env3.ns.App.last.results)[1].current, 1, "unskip restores")
+  env3.save()
 end)
 
 test("alt tracking off: main addon works without the Alts module", function()

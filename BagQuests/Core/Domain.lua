@@ -97,7 +97,8 @@ local function ownsReward(line, snap)
 end
 
 -- snap = { completed = {[questID]=true}, active = {[questID]=true},
---          level = n, faction = "Horde"|"Alliance", items = {[itemID]=count} }
+--          level = n, faction = "Horde"|"Alliance", items = {[itemID]=count},
+--          skipped = {[lineID]=stepIndex} }  -- steps the player marked done by hand
 -- Returns { line, status, done, total, current (index or nil), steps = {
 --          { step, index, state } } }
 function Domain.Evaluate(line, snap)
@@ -114,6 +115,11 @@ function Domain.Evaluate(line, snap)
   if ownsReward(line, snap) or has(snap.completed, steps[#steps].turnsIn) then
     lastDone = #steps
   end
+  -- A skipped step counts as done, like RestedXP's "skip step": for when the
+  -- game doesn't flag a step you did, or you want to jump ahead.
+  local skippedTo = math.min(snap.skipped and snap.skipped[line.id] or 0, #steps)
+  if skippedTo > lastDone then lastDone = skippedTo end
+  result.skipped = skippedTo
 
   for i, step in ipairs(steps) do
     local state

@@ -42,6 +42,14 @@ function SettingsPanel.Init(settings)
   for _, row in ipairs(SettingsPanel.ROWS) do
     add(settings, row[1], row[2], row[3], App.DEFAULTS[row[1]], onChanged)
   end
+  -- One "Track" checkbox per questline: untick the ones you don't care about.
+  for _, line in ipairs(ns.Domain.All()) do
+    local tip = string.format("%s%s. Required level %d. Unticked lines leave the tracker, map and alts table.",
+      line.faction and (line.faction .. " only. ") or "", line.slots and (line.slots .. "-slot bag") or "Bag",
+      line.minLevel)
+    add(settings, "track_" .. line.id, string.format("Track: %s (%s slots, lvl %d)", line.title,
+      tostring(line.slots or "?"), line.minLevel), tip, true, onChanged)
+  end
   for _, hook in ipairs(App.SettingsHooks()) do pcall(hook, add) end
   Settings.RegisterAddOnCategory(category)
 end

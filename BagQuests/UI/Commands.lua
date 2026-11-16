@@ -43,6 +43,25 @@ builtins = {
       App.Refresh(); App.Print("minimap pin " .. onOff(s.minimapPins)) end },
   { "lock", "Lock or unlock the tracker position", function()
       local s = App.Settings(); s.locked = not s.locked; App.Print("tracker " .. (s.locked and "locked" or "unlocked")) end },
+  { "skip", "Skip the current step (/bq skip 2 for the 2nd tracker line). Right-click a tracker line does the same", function(rest)
+      App.Refresh()
+      local w = App.Workable(App.last.results)
+      local r = w[tonumber(rest) or 1]
+      if not App.SkipStep(r) then App.Print("nothing to skip") end end },
+  { "unskip", "Undo every skipped step for this character", function()
+      App.Print(string.format("cleared skipped steps on %d questline(s)", App.Unskip())) end },
+  { "track", "List questlines; /bq track 3 turns the 3rd on or off", function(rest)
+      local all, n = Domain.All(), tonumber(rest)
+      if n and all[n] then
+        App.SetTracked(all[n], not App.IsTracked(all[n])); App.Refresh()
+        App.Print(string.format("%s: %s", all[n].title, App.IsTracked(all[n]) and "tracked" or "not tracked"))
+        return
+      end
+      for i, line in ipairs(all) do
+        App.Print(string.format("%d. [%s] %s (%s slots, lvl %d%s)", i, App.IsTracked(line) and "x" or " ",
+          line.title, tostring(line.slots or "?"), line.minLevel, line.faction and (", " .. line.faction) or ""))
+      end
+      App.Print("/bq track <number> to turn one on or off") end },
   { "settings", "Open the settings page (Options > AddOns)", function() ns.SettingsPanel.Open() end },
   { "help", "This list", function()
       App.Print("v" .. App.VERSION .. " commands:")

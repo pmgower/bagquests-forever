@@ -14,6 +14,7 @@ function Roster.Save(store, who, snap, now)
     name = who.name, surname = who.surname, realm = who.realm, class = who.class,
     level = snap.level, faction = snap.faction, seen = now,
     completed = snap.completed, active = snap.active, items = snap.items,
+    skipped = snap.skipped,
   }
   return key
 end
@@ -27,11 +28,12 @@ function Roster.Forget(store, name)
 end
 
 -- Rows for the table: { char, cells = { {text, status}, ... } }, highest level first.
-function Roster.Rows(store, Domain)
+-- lines = the questlines to show (default: all of them).
+function Roster.Rows(store, Domain, lines)
   local rows = {}
   for _, c in pairs(store) do
     local cells = {}
-    for _, line in ipairs(Domain.All()) do
+    for _, line in ipairs(lines or Domain.All()) do
       local r = Domain.Evaluate(line, c)
       local left = r.total - r.done
       local step = r.current and r.steps[r.current].step or nil

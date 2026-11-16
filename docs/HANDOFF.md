@@ -41,6 +41,8 @@ Everything else in `Data/` comes from community guides.
    base64 rows in TOC metadata; item field 6 = questRewards). Never assume Classic facts hold in
    Forever. Not added: Demon Hide Sack (16, long level 45-60 group chain), Supply Bag (Argent
    Dawn rep), Darkmoon Storage Box (tickets), bags under 10 slots.
-3b. Pick which questlines to track, skip a step, filter by bag size and level (Paul, 2026-11-16).
+3b. ~~Pick which questlines to track, skip a step.~~ Done (Track checkboxes, `/bq track`,
+   right-click or `/bq skip`, `/bq unskip`; skips per character in `BagQuestsDB.skips`).
+   Still to do: filter by minimum bag size and level (each line has `slots` and `minLevel`).
 4. First tagged release through the pipeline.
 5. Later/nice-to-have: professions per alt (Altoholic-style), sharing with friends.
