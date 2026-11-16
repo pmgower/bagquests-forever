@@ -17,7 +17,7 @@
 Free bag slots and a 3% XP buff are hiding behind quest chains that are easy to miss. BagQuests: Forever tells you where to go next.
 
 ### What it tracks
-* **Cozy Sleeping Bag**: the hidden 7-step chain from the Barrens to Arathi. It rewards the Old Toolbox (12 slots) on the way and the sleeping bag itself (+1% XP per minute rested, up to 3%, for 2 hours).
+* **Cozy Sleeping Bag**: the hidden 7-step chain to Arathi, with the right route for Alliance (starts in Westfall) and Horde (starts in the Barrens). It rewards the Old Toolbox (12 slots) on the way and the sleeping bag itself (+1% XP per minute rested, up to 3%, for 2 hours).
 * **Stronger than Steel** (Horde): Spidersilk Sack (10-slot reagent bag) or Spidersilk Pouch (12 slots).
 
 More bag quests are coming.

@@ -9,6 +9,11 @@
 -- character snapshot (completed quests, active quests, level, faction, items)
 -- into step states. The same function drives the on-screen list, the map
 -- pins, and the alts table.
+--
+-- A Questline can take a different Route per faction (Alliance and Horde
+-- visit places in a different order). Define either `steps` (one route for
+-- everyone) or `routes = { Alliance = {...}, Horde = {...} }`; StepsFor picks
+-- the one for a character.
 local _, ns = ...
 ns = ns or {}
 
@@ -26,13 +31,23 @@ Domain.LINE = {
 
 local registry, order = {}, {}
 
+local function checkSteps(label, steps)
+  assert(type(steps) == "table" and #steps > 0, label .. ": needs steps")
+  for i, s in ipairs(steps) do
+    assert(s.turnsIn or s.starts, label .. " step " .. i .. ": needs turnsIn or starts")
+    assert(s.title, label .. " step " .. i .. ": needs a title")
+  end
+end
+
 -- Validates and registers a questline definition (see Data/*.lua).
 function Domain.Register(def)
   assert(type(def) == "table" and def.id, "questline needs an id")
-  assert(type(def.steps) == "table" and #def.steps > 0, def.id .. ": needs steps")
-  for i, s in ipairs(def.steps) do
-    assert(s.turnsIn or s.starts, def.id .. " step " .. i .. ": needs turnsIn or starts")
-    assert(s.title, def.id .. " step " .. i .. ": needs a title")
+  if def.routes then
+    assert(not def.steps, def.id .. ": use steps or routes, not both")
+    for faction, steps in pairs(def.routes) do checkSteps(def.id .. " (" .. faction .. ")", steps) end
+    assert(def.defaultRoute and def.routes[def.defaultRoute], def.id .. ": needs a defaultRoute")
+  else
+    checkSteps(def.id, def.steps)
   end
   def.minLevel = def.minLevel or 1
   def.rewardItems = def.rewardItems or {}
@@ -46,6 +61,21 @@ function Domain.Get(id) return registry[id] end
 function Domain.All()
   local list = {}
   for _, id in ipairs(order) do table.insert(list, registry[id]) end
+  return list
+end
+
+-- The steps this character follows: their faction's route, else the default
+-- route (faction unknown), else the single shared route.
+function Domain.StepsFor(line, faction)
+  if not line.routes then return line.steps end
+  return line.routes[faction] or line.routes[line.defaultRoute]
+end
+
+-- Every route of a questline (one for single-route lines).
+local function allRoutes(line)
+  if not line.routes then return { line.steps } end
+  local list = {}
+  for _, steps in pairs(line.routes) do table.insert(list, steps) end
   return list
 end
 
@@ -72,19 +102,20 @@ end
 --          { step, index, state } } }
 function Domain.Evaluate(line, snap)
   snap = snap or {}
-  local result = { line = line, steps = {}, total = #line.steps, done = 0 }
+  local steps = Domain.StepsFor(line, snap.faction)
+  local result = { line = line, steps = {}, total = #steps, done = 0 }
 
   -- Steps are sequential: once one is done, everything before it is too
   -- (covers quests turned in before the addon was installed).
   local lastDone = 0
-  for i, step in ipairs(line.steps) do
+  for i, step in ipairs(steps) do
     if stepDone(step, snap) then lastDone = i end
   end
-  if ownsReward(line, snap) or has(snap.completed, line.steps[#line.steps].turnsIn) then
-    lastDone = #line.steps
+  if ownsReward(line, snap) or has(snap.completed, steps[#steps].turnsIn) then
+    lastDone = #steps
   end
 
-  for i, step in ipairs(line.steps) do
+  for i, step in ipairs(steps) do
     local state
     if i <= lastDone then state = Domain.STEP.DONE
     elseif i == lastDone + 1 then
@@ -97,7 +128,7 @@ function Domain.Evaluate(line, snap)
   end
   result.done = lastDone
 
-  if lastDone == #line.steps then result.status = Domain.LINE.DONE
+  if lastDone == #steps then result.status = Domain.LINE.DONE
   elseif line.faction and snap.faction and line.faction ~= snap.faction then
     result.status = Domain.LINE.WRONG_FACTION; result.current = nil
   elseif lastDone > 0 then result.status = Domain.LINE.IN_PROGRESS
@@ -129,9 +160,11 @@ end
 function Domain.TrackedQuestIDs()
   local ids = {}
   for _, line in ipairs(Domain.All()) do
-    for _, s in ipairs(line.steps) do
-      if s.turnsIn then ids[s.turnsIn] = true end
-      if s.starts then ids[s.starts] = true end
+    for _, steps in ipairs(allRoutes(line)) do
+      for _, s in ipairs(steps) do
+        if s.turnsIn then ids[s.turnsIn] = true end
+        if s.starts then ids[s.starts] = true end
+      end
     end
   end
   return ids
@@ -150,19 +183,21 @@ local function norm(name) return (tostring(name or ""):lower():gsub("[^%w]", "")
 
 -- Called when a quest is accepted. Returns nil when the ID is one we expect or
 -- the quest isn't one of ours, otherwise { name, expected, actual, line }:
--- the quest's real ID in Forever differs from our data file.
+-- the quest's real ID in Forever differs from our data file. One name can
+-- have several IDs (the Alliance and Horde copies of a quest).
 function Domain.CheckQuestID(questID, title)
   if not title then return nil end
   local key = norm(title)
+  local miss
   for _, line in ipairs(Domain.All()) do
     for id, name in pairs(line.quests or {}) do
       if norm(name) == key then
         if id == questID then return nil end
-        return { name = name, expected = id, actual = questID, line = line }
+        miss = miss or { name = name, expected = id, actual = questID, line = line }
       end
     end
   end
-  return nil
+  return miss
 end
 
 -- How well a character's level fits a step:
