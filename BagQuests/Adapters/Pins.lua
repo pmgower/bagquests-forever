@@ -1,19 +1,23 @@
 -- Pins: world map and minimap icons through HereBeDragons-Pins.
 -- Current step = bright bag icon on both maps; later steps = dim, world map only.
+-- World map and minimap icons come from separate frame pools. HereBeDragons
+-- anchors a minimap icon to the minimap's center, so a frame reused for the
+-- world map kept that anchor and stuck to the minimap, following the player.
 local _, ns = ...
 local Pins = {}
 ns.Pins = Pins
 
 local REF = "BagQuests"
 local ICON = "Interface\\Icons\\INV_Misc_Bag_10"
-local pool, used = {}, 0
+local pools = { world = { frames = {}, used = 0 }, mini = { frames = {}, used = 0 } }
 local playerLevel = 0
 
 local function hbd() return LibStub and LibStub("HereBeDragons-Pins-2.0", true) end
 
-local function acquire()
-  used = used + 1
-  local f = pool[used]
+local function acquire(kind)
+  local pool = pools[kind]
+  pool.used = pool.used + 1
+  local f = pool.frames[pool.used]
   if not f then
     f = CreateFrame("Button", nil, UIParent)
     f:SetSize(16, 16)
@@ -34,7 +38,7 @@ local function acquire()
     end)
     f:SetScript("OnLeave", function() GameTooltip:Hide() end)
     f:SetScript("OnClick", function(self) ns.Waypoints.Set(self.step) end)
-    pool[used] = f
+    pool.frames[pool.used] = f
   end
   return f
 end
@@ -46,8 +50,10 @@ function Pins.Refresh(results, settings, level)
   if not P then return end
   P:RemoveAllWorldMapIcons(REF)
   P:RemoveAllMinimapIcons(REF)
-  for i = 1, used do pool[i]:Hide() end
-  used = 0
+  for _, pool in pairs(pools) do
+    for i = 1, pool.used do pool.frames[i]:Hide() end
+    pool.used = 0
+  end
   for _, r in ipairs(results) do
     -- Only lines you can work on now; level-locked lines would fill the map
     -- with pins you can't use yet (the tracker lists them as "unlocks at").
@@ -56,17 +62,17 @@ function Pins.Refresh(results, settings, level)
         local s = entry.step
         local isCurrent = entry.index == r.current
         if s.mapID and (isCurrent or (entry.state == ns.Domain.STEP.LATER and settings.showLaterPins)) then
-          local f = acquire()
+          -- No Show() here: HereBeDragons shows a world map icon when the map opens.
+          local f = acquire("world")
           f.step, f.index, f.lineTitle, f.line = s, entry.index, r.line.title, r.line
           f:SetSize(isCurrent and 18 or 12, isCurrent and 18 or 12)
           f.tex:SetDesaturated(not isCurrent)
           f:SetAlpha(isCurrent and 1 or 0.6)
-          f:Show()
           P:AddWorldMapIconMap(REF, f, s.mapID, s.x / 100, s.y / 100, HBD_PINS_WORLDMAP_SHOW_CONTINENT)
           if isCurrent and settings.minimapPins then
-            local m = acquire()
+            local m = acquire("mini")
             m.step, m.index, m.lineTitle, m.line = s, entry.index, r.line.title, r.line
-            m:SetSize(14, 14); m.tex:SetDesaturated(false); m:SetAlpha(1); m:Show()
+            m:SetSize(14, 14)
             P:AddMinimapIconMap(REF, m, s.mapID, s.x / 100, s.y / 100, false, true)
           end
         end
