@@ -31,7 +31,8 @@ function Tracker.Lines(r, level)
     string.format("|cffe0a040%s|r  %d/%d", r.line.title, r.current, r.total),
     string.format("%s", s.title),
     (Tracker.LevelLine(r.line, s, level)),
-    string.format("|cffbbbbbb%s %.1f, %.1f|r", zoneName(s.mapID), s.x or 0, s.y or 0),
+    s.mapID and string.format("|cffbbbbbb%s %.1f, %.1f|r", zoneName(s.mapID), s.x or 0, s.y or 0)
+      or string.format("|cffbbbbbb%s|r", s.where or "No map pin for this step"),
   }
   if s.object then table.insert(out, "|cffbbbbbbClick:|r " .. s.object) end
   if s.npc then table.insert(out, "|cffbbbbbbTalk to:|r " .. s.npc) end

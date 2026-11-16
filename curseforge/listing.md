@@ -19,8 +19,13 @@ Free bag slots and a 3% XP buff are hiding behind quest chains that are easy to 
 ### What it tracks
 * **Cozy Sleeping Bag**: the hidden 7-step chain to Arathi, with the right route for Alliance (starts in Westfall) and Horde (starts in the Barrens). It rewards the Old Toolbox (12 slots) on the way and the sleeping bag itself (+1% XP per minute rested, up to 3%, for 2 hours).
 * **Stronger than Steel** (Horde): Spidersilk Sack (10-slot reagent bag) or Spidersilk Pouch (12 slots).
-
-More bag quests are coming.
+* **Deviate Hide Pack** (10 slots, both factions, level 13+): Deviate Hides for Nalpak at the Wailing Caverns.
+* **Hunting Satchel** (10 slots, Alliance, level 11+): Daryl the Youngling's chain in Loch Modan, ending with Ol' Sooty.
+* **Gunnysack of the Night Watch** (Alliance, level 18+): three Duskwood quests for Commander Ebonlocke.
+* **Ooze-covered Bag** (Alliance, level 19+): Sida's lost bag in the Wetlands.
+* **Explorer's Knapsack** (both factions, level 35+): Cortello's Riddle, from Stranglethorn to the Hinterlands.
+* **Thawpelt Sack** (both factions, level 40+): The Platinum Discs from Uldaman.
+* **Hyjal Postal Satchel** (18 slots, both factions, level 56+): the mail run between Mount Hyjal and Everlook, new in WoW Forever.
 
 ### Features
 * **On-screen next step**: what to click, where it is, and the level you need. Each step shows its required and suggested level, colored green, yellow or red for your character.
