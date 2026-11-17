@@ -100,7 +100,7 @@ end
 --          level = n, faction = "Horde"|"Alliance", items = {[itemID]=count},
 --          skipped = {[lineID]=stepIndex} }  -- steps the player marked done by hand
 -- Returns { line, status, done, total, current (index or nil), steps = {
---          { step, index, state } } }
+--          { step, index, state, skipped } } }
 function Domain.Evaluate(line, snap)
   snap = snap or {}
   local steps = Domain.StepsFor(line, snap.faction)
@@ -118,8 +118,10 @@ function Domain.Evaluate(line, snap)
   -- A skipped step counts as done, like RestedXP's "skip step": for when the
   -- game doesn't flag a step you did, or you want to jump ahead.
   local skippedTo = math.min(snap.skipped and snap.skipped[line.id] or 0, #steps)
+  local gameDone = lastDone
   if skippedTo > lastDone then lastDone = skippedTo end
   result.skipped = skippedTo
+  result.gameDone = gameDone -- steps the game itself shows as done
 
   for i, step in ipairs(steps) do
     local state
@@ -130,7 +132,9 @@ function Domain.Evaluate(line, snap)
       state = carrying and Domain.STEP.ACTIVE or Domain.STEP.NEXT
       result.current = i
     else state = Domain.STEP.LATER end
-    table.insert(result.steps, { step = step, index = i, state = state })
+    -- skipped: marked done by hand, not by the game.
+    table.insert(result.steps, { step = step, index = i, state = state,
+      skipped = i > gameDone and i <= skippedTo })
   end
   result.done = lastDone
 

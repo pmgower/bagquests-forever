@@ -89,6 +89,19 @@ function App.SkipStep(r)
   return true
 end
 
+-- Undoes the last skipped step on one questline (shift-right-click).
+function App.UnskipStep(r)
+  if not r then return false end
+  local skips = App.Skips()
+  local to = skips[r.line.id]
+  if not to or to <= (r.gameDone or 0) then return false end
+  to = to - 1
+  skips[r.line.id] = to > (r.gameDone or 0) and to or nil
+  App.Print(string.format("unskipped %s step %d", r.line.title, to + 1))
+  App.Refresh()
+  return true
+end
+
 function App.Unskip()
   local skips, n = App.Skips(), 0
   for id in pairs(skips) do skips[id] = nil; n = n + 1 end

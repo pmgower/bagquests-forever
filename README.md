@@ -61,7 +61,14 @@ map and the alts table. `/bq track` does the same from chat.
 
 **Right-click** a tracker line to skip that step (like RestedXP), for when the
 game doesn't count something you did or you want to jump ahead. Skips are per
-character; `/bq unskip` undoes them.
+character; **shift-right-click** undoes the last skip on that line and `/bq unskip`
+undoes them all.
+
+The tracker is a bordered window you can drag, and resize from the grip in its
+bottom-right corner. Each questline shows a row of dots for its steps: filled
+for done, a ring for the current step, a gold ring with a slash for a skipped
+step. Hover a step for a waypoint arrow and a tooltip with the clicks. Four
+color schemes: `/bq theme`.
 
 ## Settings and minimap button
 

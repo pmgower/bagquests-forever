@@ -14,7 +14,7 @@ globals = {
 -- WoW API we read. Anything not listed here fails the lint, so a PR that
 -- reaches for a new game API has to add it here, in plain sight.
 read_globals = {
-  "C_Item", "C_Map", "C_QuestLog", "C_SuperTrack", "C_Timer",
+  "C_Item", "C_Map", "C_QuestLog", "C_SuperTrack", "C_Texture", "C_Timer",
   "CreateFrame", "DEFAULT_CHAT_FRAME", "GameTooltip", "GetItemCount", "GetRealmName",
   "HBD_PINS_WORLDMAP_SHOW_CONTINENT", "IsQuestFlaggedCompleted", "LibStub",
   "IsShiftKeyDown", "RAID_CLASS_COLORS", "Settings", "TomTom", "UIParent", "UISpecialFrames", "UiMapPoint",

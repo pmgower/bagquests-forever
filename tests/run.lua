@@ -421,6 +421,32 @@ test("tracker window: resize grip saves size, reset clears it, themes switch", f
   env2.save()
 end)
 
+test("tracker hints: skipped pips, shift-right-click undo, tooltip, version", function()
+  local env = Fake.Session(ADDONS, saved, warlock)
+  local T = env.ns.Tracker
+  local r = env.ns.App.Workable(env.ns.App.last.results)[1]
+  eq(r.line.id, "stronger_than_steel")
+  truthy(T.Pips(r):find("ring:9"), "current step is a ring")
+  local row = T.RowAt(1)
+  row._onOnClick(row, "RightButton")
+  r = env.ns.App.Workable(env.ns.App.last.results)[1]
+  eq(r.steps[1].skipped, true, "step 1 flagged skipped"); eq(r.steps[2].skipped, false)
+  truthy(T.Pips(r):find("ring%-skip"), "skipped pip shown")
+  truthy(table.concat(T.TooltipLines(r), "\n"):find("1 skipped"), "tooltip offers undo")
+  truthy(table.concat(T.TooltipLines(r), "\n"):find("Step 2 of 2"), "tooltip has the count")
+  env.IsShiftKeyDown = function() return true end
+  row._onOnClick(row, "RightButton")
+  env.IsShiftKeyDown = nil
+  r = env.ns.App.Workable(env.ns.App.last.results)[1]
+  eq(r.current, 1, "shift-right-click undid the skip"); eq(r.steps[1].skipped, false)
+  truthy(not table.concat(T.TooltipLines(r), "\n"):find("skipped"), "no undo line without skips")
+  row._onOnClick(row, "LeftButton")
+  eq(T.navStep, r.steps[1].step, "left-click marks the step you're navigating to")
+  local long = { total = 14, current = 3, steps = {} }
+  eq(T.Pips(long), "|cff8888883/14|r", "long chains use n/N")
+  env.save()
+end)
+
 test("alt tracking off: main addon works without the Alts module", function()
   local env = Fake.Session(ADDONS, {}, char({ name = "Solo", level = 30, alts = false }))
   eq(env.BagQuestsAltsDB, nil)

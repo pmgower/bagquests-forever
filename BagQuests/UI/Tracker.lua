@@ -59,11 +59,35 @@ function Tracker.LevelLine(line, step, level)
     line.minLevel, step.suggested or line.minLevel, level or 0, FIT_TEXT[fit]), fit
 end
 
+-- Progress pips: one circle per step. Filled = done, ringed = current,
+-- gold ring with a slash = skipped, dim ring = still to do. Long chains fall
+-- back to "n/N". Textures are tinted white TGAs in Media/.
+local MEDIA = "Interface\\AddOns\\BagQuests\\Media\\"
+local PIP = "|T" .. MEDIA .. "%s:%d:%d:0:0:32:32:0:32:0:32:%d:%d:%d|t"
+local SKIP_RGB, LATER_RGB = { 201, 162, 39 }, { 110, 110, 110 }
+Tracker.MAX_PIPS = 12
+
+function Tracker.Pips(r)
+  if r.total > Tracker.MAX_PIPS then return string.format("|cff888888%d/%d|r", r.current or r.total, r.total) end
+  local tr, tg, tb = rgb(theme.title)
+  local out = {}
+  for i, e in ipairs(r.steps) do
+    local tex, c = "ring", LATER_RGB
+    local themed = { tr * 255, tg * 255, tb * 255 }
+    if e.skipped then tex, c = "ring-skip", SKIP_RGB
+    elseif i == r.current then tex, c = "ring", themed
+    elseif e.state == ns.Domain.STEP.DONE then tex, c = "dot", themed end
+    local size = (i == r.current) and 9 or 8
+    table.insert(out, string.format(PIP, tex, size, size, math.floor(c[1]), math.floor(c[2]), math.floor(c[3])))
+  end
+  return table.concat(out, "")
+end
+
 -- Pure text for one questline result, so tests can check it without frames.
 function Tracker.Lines(r, level)
   local s = r.steps[r.current].step
   local out = {
-    string.format("|cff%s%s|r  |cff888888%d/%d|r", theme.title, r.line.title, r.current, r.total),
+    string.format("|cff%s%s|r  %s", theme.title, r.line.title, Tracker.Pips(r)),
     string.format("%s", s.title),
     (Tracker.LevelLine(r.line, s, level)),
     s.mapID and string.format("|cffbbbbbb%s %.1f, %.1f|r", zoneName(s.mapID), s.x or 0, s.y or 0)
@@ -133,6 +157,10 @@ local function buildHeader(settings)
   titleText = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
   titleText:SetPoint("LEFT", icon, "RIGHT", 5, 0)
   titleText:SetText("BagQuests")
+  local ver = header:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  ver:SetPoint("LEFT", titleText, "RIGHT", 5, 0)
+  ver:SetText("v" .. tostring(ns.App.VERSION))
+  if ver.SetScale then ver:SetScale(0.9) end
   local close = CreateFrame("Button", nil, header, "UIPanelCloseButton")
   close:SetSize(20, 20); close:SetPoint("RIGHT", 2, 0)
   close:SetScript("OnClick", function() Tracker.Toggle(settings) end)
@@ -176,20 +204,69 @@ local function buildScroll()
   end)
 end
 
+-- Mouse-button icons for the tooltip; plain words where the atlas is missing.
+local function mouseIcon(which)
+  local atlas = "newplayertutorial-icon-mouse-" .. which .. "button"
+  if C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(atlas) then
+    return "|A:" .. atlas .. ":16:12|a "
+  end
+  return which == "left" and "|cffffd100Left-click:|r " or "|cffffd100Right-click:|r "
+end
+
+function Tracker.TooltipLines(r)
+  local out = {
+    mouseIcon("left") .. "Set waypoint",
+    mouseIcon("right") .. "Skip this step",
+  }
+  local skipped = 0
+  for _, e in ipairs(r.steps) do if e.skipped then skipped = skipped + 1 end end
+  if skipped > 0 then
+    table.insert(out, "|cff999999Shift +|r " .. mouseIcon("right") ..
+      string.format("Undo skip |cffc9a227(%d skipped)|r", skipped))
+  end
+  table.insert(out, string.format("|cff999999Step %d of %d|r", r.current or r.total, r.total))
+  return out
+end
+
+local function showTooltip(b)
+  if not (b.result and GameTooltip) then return end
+  GameTooltip:SetOwner(b, "ANCHOR_LEFT")
+  local tr, tg, tb = rgb(theme.title)
+  GameTooltip:SetText(b.result.line.title, tr, tg, tb)
+  for _, l in ipairs(Tracker.TooltipLines(b.result)) do GameTooltip:AddLine(l, 1, 1, 1) end
+  GameTooltip:Show()
+end
+
 local function buildRow()
   local b = CreateFrame("Button", nil, content)
   b.text = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   b.text:SetPoint("TOPLEFT", 2, -2); b.text:SetJustifyH("LEFT")
   local hl = b:CreateTexture(nil, "HIGHLIGHT")
   hl:SetAllPoints(); table.insert(highlights, hl)
-  -- Left-click: waypoint. Right-click: skip this step (RestedXP style).
+  -- Waypoint arrow at the right edge: shown on hover and on the step you're
+  -- navigating to. A colored edge marks that step too.
+  b.arrow = b:CreateTexture(nil, "OVERLAY")
+  b.arrow:SetSize(14, 14); b.arrow:SetPoint("TOPRIGHT", -2, -3)
+  b.arrow:SetTexture(MEDIA .. "arrow")
+  b.arrow:Hide()
+  b.edge = b:CreateTexture(nil, "ARTWORK")
+  b.edge:SetPoint("TOPLEFT"); b.edge:SetPoint("BOTTOMLEFT"); b.edge:SetWidth(2)
+  b.edge:Hide()
+  -- Left-click: waypoint. Right-click: skip (RestedXP style). Shift-right: undo.
   if b.RegisterForClicks then b:RegisterForClicks("LeftButtonUp", "RightButtonUp") end
   b:SetScript("OnClick", function(self, button)
     if button == "RightButton" then
-      if self.result then ns.App.SkipStep(self.result) end
+      if not self.result then return end
+      if IsShiftKeyDown and IsShiftKeyDown() then ns.App.UnskipStep(self.result)
+      else ns.App.SkipStep(self.result) end
     elseif self.step then
-      ns.Waypoints.Set(self.step)
+      if ns.Waypoints.Set(self.step) then Tracker.navStep = self.step; Tracker.Relayout() end
     end
+  end)
+  b:SetScript("OnEnter", function(self) self.arrow:Show(); showTooltip(self) end)
+  b:SetScript("OnLeave", function(self)
+    if self.step ~= Tracker.navStep then self.arrow:Hide() end
+    if GameTooltip then GameTooltip:Hide() end
   end)
   return b
 end
@@ -251,7 +328,11 @@ local function layout(workable, level, locked)
         y = y + 7
       end
       b.step, b.result = r.steps[r.current].step, r
-      b.text:SetWidth(w - 4)
+      b.text:SetWidth(w - 22) -- room for the waypoint arrow
+      local nav = Tracker.navStep ~= nil and b.step == Tracker.navStep
+      local er, eg, eb = rgb(theme.title)
+      b.arrow:SetVertexColor(er, eg, eb); b.edge:SetColorTexture(er, eg, eb, 0.9)
+      if nav then b.arrow:Show(); b.edge:Show() else b.arrow:Hide(); b.edge:Hide() end
       b.text:SetText(table.concat(Tracker.Lines(r, level), "\n"))
       local h = num(b.text:GetStringHeight(), 60) + 6
       b:SetSize(w, h)
