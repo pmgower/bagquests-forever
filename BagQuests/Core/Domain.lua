@@ -224,16 +224,21 @@ end
 -- WoW's quest-level colors relative to the player: red 5+ above you,
 -- orange 3-4 above, yellow within 2, green below that, grey once trivial.
 -- greenRange is how far below you a quest stays green (the game's
--- GetQuestGreenRange); without it we use the Classic rule of thumb.
+-- GetQuestGreenRange). Without it we use Classic's grey level: none up to
+-- level 5, level - floor(level/10) - 5 up to 39, level - floor(level/5) - 1 after.
 Domain.DIFFICULTY = { RED = "red", ORANGE = "orange", YELLOW = "yellow", GREEN = "green", GREY = "grey" }
 function Domain.Difficulty(questLevel, playerLevel, greenRange)
   local diff = questLevel - (playerLevel or 0)
   if diff >= 5 then return Domain.DIFFICULTY.RED end
   if diff >= 3 then return Domain.DIFFICULTY.ORANGE end
   if diff >= -2 then return Domain.DIFFICULTY.YELLOW end
-  greenRange = greenRange or (math.floor((playerLevel or 0) / 10) + 5)
-  if -diff <= greenRange then return Domain.DIFFICULTY.GREEN end
-  return Domain.DIFFICULTY.GREY
+  if greenRange then
+    return -diff <= greenRange and Domain.DIFFICULTY.GREEN or Domain.DIFFICULTY.GREY
+  end
+  local pl, grey = playerLevel or 0, 0
+  if pl >= 40 then grey = pl - math.floor(pl / 5) - 1
+  elseif pl >= 6 then grey = pl - math.floor(pl / 10) - 5 end
+  return questLevel <= grey and Domain.DIFFICULTY.GREY or Domain.DIFFICULTY.GREEN
 end
 
 return Domain
