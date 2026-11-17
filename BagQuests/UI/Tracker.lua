@@ -46,17 +46,19 @@ local function zoneName(mapID)
   return info and info.name or ("map " .. tostring(mapID))
 end
 
-local FIT_TEXT = {
-  ok = "|cff66ff66good level for you|r",
-  low = "|cffffcc00a bit low for you|r",
-  blocked = "|cffff6060too low to start|r",
-}
+-- Same colors the game uses for quest levels (QuestDifficultyColors).
+local DIFFICULTY_HEX = { red = "ff1a1a", orange = "ff8040", yellow = "ffd100", green = "40bf40", grey = "808080" }
 
--- "Req 14 · Suggested 24 · you 20 (a bit low)" colored by fit.
+-- "Req 14  Suggested 22": Req turns red when you can't pick the quest up yet;
+-- the suggested level uses the game's quest colors for your level.
 function Tracker.LevelLine(line, step, level)
   local fit = ns.Domain.LevelFit(line, step, level)
-  return string.format("|cffbbbbbbReq %d  Suggested %d  You %d|r  %s",
-    line.minLevel, step.suggested or line.minLevel, level or 0, FIT_TEXT[fit]), fit
+  local suggested = step.suggested or line.minLevel
+  local greenRange = GetQuestGreenRange and tonumber(GetQuestGreenRange()) or nil
+  local diff = ns.Domain.Difficulty(suggested, level, greenRange)
+  local reqHex = fit == ns.Domain.FIT.BLOCKED and DIFFICULTY_HEX.red or "ffffff"
+  return string.format("|cffbbbbbbReq|r |cff%s%d|r  |cffbbbbbbSuggested|r |cff%s%d|r",
+    reqHex, line.minLevel, DIFFICULTY_HEX[diff], suggested), fit
 end
 
 -- Progress pips: one circle per step. Filled = done, ringed = current,

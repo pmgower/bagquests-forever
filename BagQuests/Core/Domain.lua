@@ -221,4 +221,19 @@ function Domain.LevelFit(line, step, level)
   return Domain.FIT.OK
 end
 
+-- WoW's quest-level colors relative to the player: red 5+ above you,
+-- orange 3-4 above, yellow within 2, green below that, grey once trivial.
+-- greenRange is how far below you a quest stays green (the game's
+-- GetQuestGreenRange); without it we use the Classic rule of thumb.
+Domain.DIFFICULTY = { RED = "red", ORANGE = "orange", YELLOW = "yellow", GREEN = "green", GREY = "grey" }
+function Domain.Difficulty(questLevel, playerLevel, greenRange)
+  local diff = questLevel - (playerLevel or 0)
+  if diff >= 5 then return Domain.DIFFICULTY.RED end
+  if diff >= 3 then return Domain.DIFFICULTY.ORANGE end
+  if diff >= -2 then return Domain.DIFFICULTY.YELLOW end
+  greenRange = greenRange or (math.floor((playerLevel or 0) / 10) + 5)
+  if -diff <= greenRange then return Domain.DIFFICULTY.GREEN end
+  return Domain.DIFFICULTY.GREY
+end
+
 return Domain

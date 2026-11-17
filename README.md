@@ -47,9 +47,9 @@ Questlines your character can't start yet are listed at the bottom:
 
 ## Level hints
 
-Each step on the tracker shows **Req** (the level needed to start the questline),
-**Suggested** (the quest's level, from Wowhead) and your level, colored green
-(good), yellow (a bit low) or red (too low to start). Questlines you can't start
+Each step on the tracker shows **Req** (the level needed to start the questline,
+red if you can't pick it up yet) and **Suggested** (the quest's level), colored
+the way the game colors quest levels for you: red, orange, yellow, green or grey. Questlines you can't start
 yet show at the bottom as "unlocks at N". The alts table adds "sugg N" when a
 character is under the suggested level for its current step.
 
