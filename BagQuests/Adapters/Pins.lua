@@ -8,7 +8,7 @@ local Pins = {}
 ns.Pins = Pins
 
 local REF = "BagQuests"
-local ICON = "Interface\\AddOns\\BagQuests\\Media\\logo"
+local ICON = "Interface\\AddOns\\BagQuests\\Media\\bag"
 local pools = { world = { frames = {}, used = 0 }, mini = { frames = {}, used = 0 } }
 local playerLevel = 0
 
