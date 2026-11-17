@@ -16,16 +16,16 @@ Window.CHROME_H = HEADER_H + 4 + GRIP_PAD -- height that isn't content
 -- Color schemes (switch with /bq theme). Colors are 0-1 RGB(A); hex strings
 -- are for |c escapes in text.
 Window.THEMES = {
-  { key = "deepwater", name = "Deepwater", bg = { 0.04, 0.09, 0.10, 0.90 }, edge = { 0.25, 0.65, 0.63 },
-    title = "7fe3d8", hint = "8fd6ff" },
   { key = "frost", name = "Frost Steel", bg = { 0.05, 0.07, 0.11, 0.90 }, edge = { 0.50, 0.61, 0.76 },
     title = "b9d3f5", hint = "9fd0ff" },
+  { key = "deepwater", name = "Deepwater", bg = { 0.04, 0.09, 0.10, 0.90 }, edge = { 0.25, 0.65, 0.63 },
+    title = "7fe3d8", hint = "8fd6ff" },
   { key = "twilight", name = "Twilight", bg = { 0.08, 0.05, 0.12, 0.90 }, edge = { 0.56, 0.45, 0.84 },
     title = "cdb9ff", hint = "a8d8ff" },
   { key = "classic", name = "Classic Black", bg = { 0, 0, 0, 0.78 }, edge = { 0.42, 0.42, 0.42 },
     title = "ffd100", hint = "9fd0ff" },
 }
-Window.DEFAULT_THEME = "deepwater"
+Window.DEFAULT_THEME = "frost"
 
 function Window.Theme(key)
   for _, t in ipairs(Window.THEMES) do if t.key == key then return t end end

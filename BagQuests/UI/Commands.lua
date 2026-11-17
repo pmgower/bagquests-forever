@@ -46,7 +46,7 @@ builtins = {
       App.Print("tracker " .. (s.locked and "locked" or "unlocked")) end },
   { "reset", "Move the tracker and alts windows back to their default spot and size", function()
       ns.Window.ResetAll(); App.Refresh(); App.Print("window positions and sizes reset") end },
-  { "theme", "Tracker color scheme: /bq theme frost (deepwater, frost, twilight, classic). No name cycles", function(rest)
+  { "theme", "Tracker color scheme: /bq theme twilight (frost, deepwater, twilight, classic). No name cycles", function(rest)
       local s, themes = App.Settings(), ns.Tracker.THEMES
       local key = rest and rest:lower():match("%a+")
       if not key then
@@ -57,7 +57,7 @@ builtins = {
       end
       local found = false
       for _, t in ipairs(themes) do if t.key == key then found = true end end
-      if not found then App.Print("unknown theme: " .. key .. " (deepwater, frost, twilight, classic)"); return end
+      if not found then App.Print("unknown theme: " .. key .. " (frost, deepwater, twilight, classic)"); return end
       s.theme = key; ns.Tracker.ApplyTheme(key); App.Refresh()
       App.Print("theme: " .. ns.Tracker.Theme(key).name) end },
   { "skip", "Skip the current step (/bq skip 2 for the 2nd tracker line). Right-click a tracker line does the same", function(rest)
