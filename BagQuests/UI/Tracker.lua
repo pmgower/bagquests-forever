@@ -115,6 +115,24 @@ local function savePosition(settings)
   settings.point = { p, nil, rp, x, y }
 end
 
+-- The whole window drags: the frame, the title bar and the step rows all
+-- forward a left-drag here. Without this, a drag that starts on a row or the
+-- title bar is swallowed by that child and the window doesn't move.
+local trackerSettings
+local function startMove()
+  if trackerSettings and not trackerSettings.locked then frame:StartMoving() end
+end
+local function stopMove()
+  frame:StopMovingOrSizing()
+  if trackerSettings then savePosition(trackerSettings) end
+end
+local function forwardDrag(child)
+  child:EnableMouse(true)
+  child:RegisterForDrag("LeftButton")
+  child:SetScript("OnDragStart", startMove)
+  child:SetScript("OnDragStop", stopMove)
+end
+
 local function contentWidth()
   return num(frame:GetWidth(), DEFAULT_W) - PAD * 2
 end
@@ -148,6 +166,7 @@ local function buildHeader(settings)
   header = CreateFrame("Frame", nil, frame)
   header:SetPoint("TOPLEFT", 4, -4); header:SetPoint("TOPRIGHT", -4, -4)
   header:SetHeight(HEADER_H - 4)
+  forwardDrag(header)
   local bg = header:CreateTexture(nil, "BACKGROUND")
   bg:SetAllPoints(); bg:SetColorTexture(1, 1, 1, 0.06)
   local icon = header:CreateTexture(nil, "ARTWORK")
@@ -253,6 +272,7 @@ local function buildRow()
   b.edge:Hide()
   -- Left-click: waypoint. Right-click: skip (RestedXP style). Shift-right: undo.
   if b.RegisterForClicks then b:RegisterForClicks("LeftButtonUp", "RightButtonUp") end
+  forwardDrag(b)
   b:SetScript("OnClick", function(self, button)
     if button == "RightButton" then
       if not self.result then return end
@@ -283,18 +303,18 @@ function Tracker.Init(settings)
   frame:SetClampedToScreen(true)
   applyBackdrop(frame)
   frame:SetMovable(true); frame:SetResizable(true); setResizeBounds(frame)
-  frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
-  frame:SetScript("OnDragStart", function(f) if not settings.locked then f:StartMoving() end end)
-  frame:SetScript("OnDragStop", function(f)
-    f:StopMovingOrSizing()
-    savePosition(settings)
-  end)
+  trackerSettings = settings
+  forwardDrag(frame)
   -- Live re-wrap while the grip is dragged.
   frame:SetScript("OnSizeChanged", function() Tracker.Relayout() end)
 
   buildHeader(settings)
   buildScroll()
   buildGrip(settings)
+  -- Keep the title bar and grip above the scrolling list so nothing in the
+  -- list can sit on top of them and take their clicks.
+  local base = num(frame:GetFrameLevel(), 1)
+  header:SetFrameLevel(base + 10); grip:SetFrameLevel(base + 10)
 
   rows, separators = {}, {}
   for i = 1, MAX_LINES do

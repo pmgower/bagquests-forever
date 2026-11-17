@@ -447,6 +447,17 @@ test("tracker hints: skipped pips, shift-right-click undo, tooltip, version", fu
   env.save()
 end)
 
+test("tracker drags from a step row", function()
+  local env = Fake.Session(ADDONS, saved, warlock)
+  local s = env.ns.App.Settings()
+  local row = env.ns.Tracker.RowAt(1)
+  truthy(row._onOnDragStart, "rows forward drags to the window")
+  s.point = nil
+  row._onOnDragStart(row); row._onOnDragStop(row)
+  truthy(s.point, "dragging a row moves and saves the window")
+  env.save()
+end)
+
 test("alt tracking off: main addon works without the Alts module", function()
   local env = Fake.Session(ADDONS, {}, char({ name = "Solo", level = 30, alts = false }))
   eq(env.BagQuestsAltsDB, nil)
