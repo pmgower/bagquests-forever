@@ -13,7 +13,7 @@ local db
 local listeners, commands = {}, {}
 
 App.DEFAULTS = { tracker = true, minimapPins = true, showLaterPins = true, locked = false,
-  minimapButton = true }
+  minimapButton = true, theme = "deepwater" }
 
 function App.Print(msg) DEFAULT_CHAT_FRAME:AddMessage("|cffe0a040BagQuests|r " .. tostring(msg)) end
 

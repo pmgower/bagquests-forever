@@ -83,12 +83,14 @@ The minimap button: **left-click** tracker on/off, **right-click** settings,
 
 | Command | What it does |
 | --- | --- |
-| `/bq` | Show or hide the on-screen tracker (drag it to move) |
+| `/bq` | Show or hide the on-screen tracker (drag it to move, drag the corner grip to resize) |
 | `/bq way` | Waypoint to your next step (clicking a tracker line or pin does the same) |
 | `/bq status` | Every bag questline for this character |
 | `/bq alts` | Table of every character's progress (needs BagQuests_Alts) |
 | `/bq verify` | Our quest IDs vs your quest log, plus any ID mismatches |
-| `/bq pins` / `/bq minimap` / `/bq lock` | Toggle later-step pins, the minimap pin, tracker lock |
+| `/bq pins` / `/bq minimap` / `/bq lock` | Toggle later-step pins, the minimap pin, tracker lock (lock also hides the resize grip) |
+| `/bq reset` | Put the tracker back at its default spot and size |
+| `/bq theme` / `/bq theme <name>` | Cycle the tracker color scheme, or pick one: deepwater, frost, twilight, classic |
 | `/bq surnames` | Show or hide second names in the alts table (shown by default) |
 | `/bq forget <name>` | Drop a character from the alts table |
 | `/bq track` / `/bq track <n>` | List questlines / turn the nth one on or off |
