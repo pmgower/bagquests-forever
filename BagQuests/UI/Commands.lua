@@ -44,8 +44,8 @@ builtins = {
   { "lock", "Lock or unlock the tracker position", function()
       local s = App.Settings(); s.locked = not s.locked; App.Refresh()
       App.Print("tracker " .. (s.locked and "locked" or "unlocked")) end },
-  { "reset", "Move the tracker back to its default spot and size", function()
-      ns.Tracker.Reset(App.Settings()); App.Print("tracker position and size reset") end },
+  { "reset", "Move the tracker and alts windows back to their default spot and size", function()
+      ns.Window.ResetAll(); App.Refresh(); App.Print("window positions and sizes reset") end },
   { "theme", "Tracker color scheme: /bq theme frost (deepwater, frost, twilight, classic). No name cycles", function(rest)
       local s, themes = App.Settings(), ns.Tracker.THEMES
       local key = rest and rest:lower():match("%a+")

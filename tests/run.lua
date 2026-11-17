@@ -415,7 +415,11 @@ test("tracker window: resize grip saves size, reset clears it, themes switch", f
   local env2 = Fake.Session(ADDONS, saved, warlock)
   local s2 = env2.ns.App.Settings()
   truthy(s2.size, "size survives a relog"); eq(s2.theme, "classic", "theme survives a relog")
+  env2.SlashCmdList.BAGQUESTS("alts")
+  truthy(env2.BagQuestsAltsDB.settings.window, "alts window has its own saved spot")
+  env2.BagQuestsAltsDB.settings.window.size = { 500, 300 }
   env2.SlashCmdList.BAGQUESTS("reset")
+  eq(env2.BagQuestsAltsDB.settings.window.size, nil, "reset covers the alts window")
   eq(s2.size, nil); eq(s2.point, nil)
   env2.SlashCmdList.BAGQUESTS("theme deepwater")
   env2.save()

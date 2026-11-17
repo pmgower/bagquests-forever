@@ -1,45 +1,24 @@
 -- Tracker: RestedXP-style guide window with the next step for each questline.
--- A bordered, movable, resizable window: header with title and close button,
--- a scrolling list of steps, and a size grip in the bottom-right corner.
+-- The window frame itself (border, title bar, grip, scrolling, themes) is the
+-- shared UI/Window.lua; this file fills it with steps.
 local _, ns = ...
 local Tracker = {}
 ns.Tracker = Tracker
+local Window = ns.Window
 
 local MAX_LINES = 4
 local DEFAULT_W = 270
-local MIN_W, MIN_H, MAX_W, MAX_H = 200, 80, 640, 900
 local AUTO_MAX_H = 520     -- auto-fit height cap until the player resizes it
-local HEADER_H, PAD, GRIP_PAD = 24, 10, 14
 
-local frame, scroll, content, grip, header, countText, rows, separators, lockedText
+local win, frame, content, rows, separators, lockedText
 local lastArgs -- last Render() arguments, so a resize can re-lay out the rows
-local titleText, headerLine, highlights = nil, nil, {}
 
--- Color schemes (switch with /bq theme). Colors are 0-1 RGB(A); hex strings
--- are for |c escapes in text.
-Tracker.THEMES = {
-  { key = "deepwater", name = "Deepwater", bg = { 0.04, 0.09, 0.10, 0.90 }, edge = { 0.25, 0.65, 0.63 },
-    title = "7fe3d8", hint = "8fd6ff" },
-  { key = "frost", name = "Frost Steel", bg = { 0.05, 0.07, 0.11, 0.90 }, edge = { 0.50, 0.61, 0.76 },
-    title = "b9d3f5", hint = "9fd0ff" },
-  { key = "twilight", name = "Twilight", bg = { 0.08, 0.05, 0.12, 0.90 }, edge = { 0.56, 0.45, 0.84 },
-    title = "cdb9ff", hint = "a8d8ff" },
-  { key = "classic", name = "Classic Black", bg = { 0, 0, 0, 0.78 }, edge = { 0.42, 0.42, 0.42 },
-    title = "ffd100", hint = "9fd0ff" },
-}
-Tracker.DEFAULT_THEME = "deepwater"
-
-function Tracker.Theme(key)
-  for _, t in ipairs(Tracker.THEMES) do if t.key == key then return t end end
-  return Tracker.THEMES[1]
-end
-local theme = Tracker.Theme(Tracker.DEFAULT_THEME)
-
-local function rgb(hex)
-  return tonumber(hex:sub(1, 2), 16) / 255, tonumber(hex:sub(3, 4), 16) / 255, tonumber(hex:sub(5, 6), 16) / 255
-end
-
-local function num(v, default) return tonumber(v) or default end
+-- Color schemes live in Window; these aliases keep /bq theme and tests simple.
+Tracker.THEMES = Window.THEMES
+Tracker.DEFAULT_THEME = Window.DEFAULT_THEME
+Tracker.Theme = Window.Theme
+local rgb, num = Window.Rgb, Window.Num
+local function theme() return Window.Current() end
 
 local function zoneName(mapID)
   local info = C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(mapID)
@@ -71,7 +50,7 @@ Tracker.MAX_PIPS = 12
 
 function Tracker.Pips(r)
   if r.total > Tracker.MAX_PIPS then return string.format("|cff888888%d/%d|r", r.current or r.total, r.total) end
-  local tr, tg, tb = rgb(theme.title)
+  local tr, tg, tb = rgb(theme().title)
   local out = {}
   for i, e in ipairs(r.steps) do
     local tex, c = "ring", LATER_RGB
@@ -95,7 +74,7 @@ end
 function Tracker.Lines(r, level)
   local s = r.steps[r.current].step
   local out = {
-    string.format("|cff%s%s|r%s  %s", theme.title, r.line.title, Tracker.SlotsText(r.line), Tracker.Pips(r)),
+    string.format("|cff%s%s|r%s  %s", theme().title, r.line.title, Tracker.SlotsText(r.line), Tracker.Pips(r)),
     string.format("%s", s.title),
     (Tracker.LevelLine(r.line, s, level)),
     s.mapID and string.format("|cffbbbbbb%s %.1f, %.1f|r", zoneName(s.mapID), s.x or 0, s.y or 0)
@@ -103,131 +82,9 @@ function Tracker.Lines(r, level)
   }
   if s.object then table.insert(out, "|cffbbbbbbClick:|r " .. s.object) end
   if s.npc then table.insert(out, "|cffbbbbbbTalk to:|r " .. s.npc) end
-  if s.hint then table.insert(out, "|cff" .. theme.hint .. s.hint .. "|r") end
+  if s.hint then table.insert(out, "|cff" .. theme().hint .. s.hint .. "|r") end
   if s.reward then table.insert(out, "|cff66ff66Reward: " .. s.reward .. "|r") end
   return out
-end
-
--- Modern clients have SetResizeBounds; older ones SetMinResize/SetMaxResize.
-local function setResizeBounds(f)
-  if f.SetResizeBounds then
-    f:SetResizeBounds(MIN_W, MIN_H, MAX_W, MAX_H)
-  else
-    if f.SetMinResize then f:SetMinResize(MIN_W, MIN_H) end
-    if f.SetMaxResize then f:SetMaxResize(MAX_W, MAX_H) end
-  end
-end
-
-local function savePosition(settings)
-  local p, _, rp, x, y = frame:GetPoint()
-  settings.point = { p, nil, rp, x, y }
-end
-
--- The whole window drags: the frame, the title bar and the step rows all
--- forward a left-drag here. Without this, a drag that starts on a row or the
--- title bar is swallowed by that child and the window doesn't move.
-local trackerSettings
-local function startMove()
-  if trackerSettings and not trackerSettings.locked then frame:StartMoving() end
-end
-local function stopMove()
-  frame:StopMovingOrSizing()
-  if trackerSettings then savePosition(trackerSettings) end
-end
-local function forwardDrag(child)
-  child:EnableMouse(true)
-  child:RegisterForDrag("LeftButton")
-  child:SetScript("OnDragStart", startMove)
-  child:SetScript("OnDragStop", stopMove)
-end
-
-local function contentWidth()
-  return num(frame:GetWidth(), DEFAULT_W) - PAD * 2
-end
-
-local function applyBackdrop(f)
-  if not f.SetBackdrop then return end
-  f:SetBackdrop({
-    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true, tileSize = 16, edgeSize = 14,
-    insets = { left = 3, right = 3, top = 3, bottom = 3 },
-  })
-end
-
--- Recolor the window for a scheme. Text colors apply on the next Render.
-function Tracker.ApplyTheme(key)
-  theme = Tracker.Theme(key)
-  if not frame then return theme end
-  if frame.SetBackdropColor then
-    frame:SetBackdropColor(theme.bg[1], theme.bg[2], theme.bg[3], theme.bg[4])
-    frame:SetBackdropBorderColor(theme.edge[1], theme.edge[2], theme.edge[3], 1)
-  end
-  local r, g, b = rgb(theme.title)
-  titleText:SetTextColor(r, g, b)
-  headerLine:SetColorTexture(theme.edge[1], theme.edge[2], theme.edge[3], 0.55)
-  for _, hl in ipairs(highlights) do hl:SetColorTexture(r, g, b, 0.10) end
-  return theme
-end
-
-local function buildHeader(settings)
-  header = CreateFrame("Frame", nil, frame)
-  header:SetPoint("TOPLEFT", 4, -4); header:SetPoint("TOPRIGHT", -4, -4)
-  header:SetHeight(HEADER_H - 4)
-  forwardDrag(header)
-  local bg = header:CreateTexture(nil, "BACKGROUND")
-  bg:SetAllPoints(); bg:SetColorTexture(1, 1, 1, 0.06)
-  local icon = header:CreateTexture(nil, "ARTWORK")
-  icon:SetSize(18, 18); icon:SetPoint("LEFT", 3, 0)
-  icon:SetTexture("Interface\\AddOns\\BagQuests\\Media\\bag")
-  titleText = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  titleText:SetPoint("LEFT", icon, "RIGHT", 5, 0)
-  titleText:SetText("BagQuests")
-  local ver = header:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  ver:SetPoint("LEFT", titleText, "RIGHT", 5, 0)
-  ver:SetText("v" .. tostring(ns.App.VERSION))
-  if ver.SetScale then ver:SetScale(0.9) end
-  local close = CreateFrame("Button", nil, header, "UIPanelCloseButton")
-  close:SetSize(20, 20); close:SetPoint("RIGHT", 2, 0)
-  close:SetScript("OnClick", function() Tracker.Toggle(settings) end)
-  countText = header:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  countText:SetPoint("RIGHT", close, "LEFT", -2, 0)
-  headerLine = frame:CreateTexture(nil, "ARTWORK")
-  headerLine:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, 0)
-  headerLine:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT", 0, 0)
-  headerLine:SetHeight(1)
-end
-
-local function buildGrip(settings)
-  grip = CreateFrame("Button", nil, frame)
-  grip:SetSize(16, 16); grip:SetPoint("BOTTOMRIGHT", -3, 3)
-  grip:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
-  grip:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight", "ADD")
-  grip:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
-  grip:SetScript("OnMouseDown", function(_, button)
-    if button == "LeftButton" and not settings.locked then frame:StartSizing("BOTTOMRIGHT") end
-  end)
-  grip:SetScript("OnMouseUp", function()
-    frame:StopMovingOrSizing()
-    settings.size = { num(frame:GetWidth(), DEFAULT_W), num(frame:GetHeight(), 200) }
-    savePosition(settings)
-    Tracker.Relayout()
-  end)
-end
-
-local function buildScroll()
-  scroll = CreateFrame("ScrollFrame", nil, frame)
-  scroll:SetPoint("TOPLEFT", PAD, -(HEADER_H + 4))
-  scroll:SetPoint("BOTTOMRIGHT", -PAD, GRIP_PAD)
-  content = CreateFrame("Frame", nil, scroll)
-  content:SetSize(DEFAULT_W - PAD * 2, 10)
-  scroll:SetScrollChild(content)
-  scroll:EnableMouseWheel(true)
-  scroll:SetScript("OnMouseWheel", function(self, delta)
-    local max = num(self:GetVerticalScrollRange(), 0)
-    local v = num(self:GetVerticalScroll(), 0) - delta * 30
-    self:SetVerticalScroll(math.max(0, math.min(max, v)))
-  end)
 end
 
 -- Mouse-button icons for the tooltip; plain words where the atlas is missing.
@@ -260,7 +117,7 @@ end
 local function showTooltip(b)
   if not (b.result and GameTooltip) then return end
   GameTooltip:SetOwner(b, "ANCHOR_LEFT")
-  local tr, tg, tb = rgb(theme.title)
+  local tr, tg, tb = rgb(theme().title)
   GameTooltip:SetText(b.result.line.title, tr, tg, tb)
   for _, l in ipairs(Tracker.TooltipLines(b.result)) do GameTooltip:AddLine(l, 1, 1, 1) end
   GameTooltip:Show()
@@ -271,7 +128,7 @@ local function buildRow()
   b.text = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   b.text:SetPoint("TOPLEFT", 2, -2); b.text:SetJustifyH("LEFT")
   local hl = b:CreateTexture(nil, "HIGHLIGHT")
-  hl:SetAllPoints(); table.insert(highlights, hl)
+  hl:SetAllPoints(); win:AddHighlight(hl)
   -- Waypoint arrow at the right edge: shown on hover and on the step you're
   -- navigating to. A colored edge marks that step too.
   b.arrow = b:CreateTexture(nil, "OVERLAY")
@@ -283,7 +140,7 @@ local function buildRow()
   b.edge:Hide()
   -- Left-click: waypoint. Right-click: skip (RestedXP style). Shift-right: undo.
   if b.RegisterForClicks then b:RegisterForClicks("LeftButtonUp", "RightButtonUp") end
-  forwardDrag(b)
+  win:ForwardDrag(b)
   b:SetScript("OnClick", function(self, button)
     if button == "RightButton" then
       if not self.result then return end
@@ -302,31 +159,16 @@ local function buildRow()
 end
 
 function Tracker.Init(settings)
-  frame = CreateFrame("Frame", "BagQuestsTracker", UIParent, "BackdropTemplate")
-  local size = settings.size
-  frame:SetSize(size and size[1] or DEFAULT_W, size and size[2] or 120)
-  if settings.point then
-    frame:SetPoint(settings.point[1], UIParent, settings.point[3], settings.point[4], settings.point[5])
-  else
-    frame:SetPoint("RIGHT", UIParent, "RIGHT", -40, 120)
-  end
-  frame:SetFrameStrata("MEDIUM")
-  frame:SetClampedToScreen(true)
-  applyBackdrop(frame)
-  frame:SetMovable(true); frame:SetResizable(true); setResizeBounds(frame)
-  trackerSettings = settings
-  forwardDrag(frame)
-  -- Live re-wrap while the grip is dragged.
-  frame:SetScript("OnSizeChanged", function() Tracker.Relayout() end)
-
-  buildHeader(settings)
-  buildScroll()
-  buildGrip(settings)
-  -- Keep the title bar and grip above the scrolling list so nothing in the
-  -- list can sit on top of them and take their clicks.
-  local base = num(frame:GetFrameLevel(), 1)
-  header:SetFrameLevel(base + 10); grip:SetFrameLevel(base + 10)
-
+  win = Window.New({
+    name = "BagQuestsTracker", title = "BagQuests", store = settings,
+    defaultPoint = { "RIGHT", "RIGHT", -40, 120 }, defaultSize = { DEFAULT_W, 120 },
+    bounds = { 200, 80, 640, 900 },
+    isLocked = function() return settings.locked end,
+    onClose = function() Tracker.Toggle(settings) end,
+    onResize = function() Tracker.Relayout() end,
+    onTheme = function() Tracker.Relayout() end,
+  })
+  frame, content = win.frame, win.content
   rows, separators = {}, {}
   for i = 1, MAX_LINES do
     rows[i] = buildRow()
@@ -334,15 +176,18 @@ function Tracker.Init(settings)
     sep:SetHeight(1); sep:SetColorTexture(1, 1, 1, 0.08); sep:Hide()
     separators[i] = sep
   end
-  Tracker.ApplyTheme(settings.theme)
+  Window.SetTheme(settings.theme)
 end
 
+-- Recolor every window for a scheme. Text colors apply on the next Render.
+function Tracker.ApplyTheme(key) return Window.SetTheme(key) end
+
 function Tracker.RowAt(i) return rows and rows[i] end -- tests
-function Tracker.Grip() return grip end -- tests
+function Tracker.Grip() return win and win.grip end -- tests
 
 -- Lay out the rows inside the scroll area. Returns the content height.
 local function layout(workable, level, locked)
-  local w = contentWidth()
+  local w = win:ContentWidth()
   content:SetWidth(w)
   local y = 0
   local shown = 0
@@ -360,7 +205,7 @@ local function layout(workable, level, locked)
       b.step, b.result = r.steps[r.current].step, r
       b.text:SetWidth(w - 22) -- room for the waypoint arrow
       local nav = Tracker.navStep ~= nil and b.step == Tracker.navStep
-      local er, eg, eb = rgb(theme.title)
+      local er, eg, eb = rgb(theme().title)
       b.arrow:SetVertexColor(er, eg, eb); b.edge:SetColorTexture(er, eg, eb, 0.9)
       if nav then b.arrow:Show(); b.edge:Show() else b.arrow:Hide(); b.edge:Hide() end
       b.text:SetText(table.concat(Tracker.Lines(r, level), "\n"))
@@ -407,15 +252,12 @@ function Tracker.Render(workable, settings, level, locked)
   lastArgs = { workable = workable, level = level, locked = locked }
   if not settings.tracker or (#workable == 0 and #locked == 0) then frame:Hide(); return end
 
-  if settings.locked then grip:Hide() else grip:Show() end
-  countText:SetText(#workable > 0 and string.format("%d active", #workable) or "")
+  win:UpdateGrip()
+  win:SetRightText(#workable > 0 and string.format("%d active", #workable) or "")
 
   Tracker._inLayout = true
   local h = layout(workable, level, locked)
-  -- Until the player sizes the window themselves, fit it to the content.
-  if not settings.size then
-    frame:SetHeight(math.max(MIN_H, math.min(AUTO_MAX_H, h + HEADER_H + 4 + GRIP_PAD)))
-  end
+  win:AutoFit(nil, h, AUTO_MAX_H) -- fits height until the player resizes it
   Tracker._inLayout = false
   frame:Show()
 end
@@ -423,10 +265,8 @@ end
 -- Back to the default spot, width and auto-fit height.
 function Tracker.Reset(settings)
   settings.point, settings.size = nil, nil
-  if not frame then return end
-  frame:ClearAllPoints()
-  frame:SetPoint("RIGHT", UIParent, "RIGHT", -40, 120)
-  frame:SetWidth(DEFAULT_W)
+  if not win then return end
+  win:Reset()
   ns.App.Refresh()
 end
 

@@ -47,15 +47,29 @@ function AltsWindow.Grid(store, Domain, opts)
 end
 
 local COL = { 170, 34, 150, 150, 150, 150 }
+local ROW_H = 18
+
+-- Same window frame as the tracker (border, title bar, theme, resize grip),
+-- from BagQuests' shared UI/Window.lua.
+local win, stripes, headerLine = nil, {}, nil
+local lastGrid, lastOpts
+
+local function store()
+  BagQuestsAltsDB.settings = BagQuestsAltsDB.settings or {}
+  BagQuestsAltsDB.settings.window = BagQuestsAltsDB.settings.window or {}
+  return BagQuestsAltsDB.settings.window
+end
 
 local function build()
-  frame = CreateFrame("Frame", "BagQuestsAltsWindow", UIParent, "BasicFrameTemplateWithInset")
-  frame:SetSize(480, 300)
-  frame:SetPoint("CENTER")
-  frame:SetMovable(true); frame:EnableMouse(true); frame:RegisterForDrag("LeftButton")
-  frame:SetScript("OnDragStart", frame.StartMoving)
-  frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-  if type(frame.TitleText) == "table" then frame.TitleText:SetText("BagQuests: alts") end
+  win = App.Window.New({
+    name = "BagQuestsAltsWindow", title = "BagQuests Alts", store = store(),
+    defaultPoint = { "CENTER", "CENTER", 0, 0 }, defaultSize = { 480, 200 },
+    bounds = { 260, 100, 1400, 900 },
+    isLocked = function() return App.Settings and App.Settings().locked end,
+    onResize = function() AltsWindow.Relayout() end,
+    onTheme = function() AltsWindow.Relayout() end,
+  })
+  frame = win.frame
   tinsert(UISpecialFrames, "BagQuestsAltsWindow") -- Esc closes it
   frame:Hide() -- new frames start shown; Toggle below expects hidden
 end
@@ -64,33 +78,76 @@ local function cell(r, c)
   cells[r] = cells[r] or {}
   local fs = cells[r][c]
   if not fs then
-    fs = frame:CreateFontString(nil, "OVERLAY", r == 1 and "GameFontNormalSmall" or "GameFontHighlightSmall")
+    fs = win.content:CreateFontString(nil, "OVERLAY", r == 1 and "GameFontNormalSmall" or "GameFontHighlightSmall")
     fs:SetJustifyH("LEFT")
     cells[r][c] = fs
   end
   return fs
 end
 
-function AltsWindow.Render()
-  local opts = BagQuestsAltsDB.settings or {}
-  local grid = AltsWindow.Grid(BagQuestsAltsDB.characters, App.Domain, opts)
-  local width = 24
+-- Every other row gets a faint stripe so wide rows are easy to follow.
+local function stripe(r)
+  local t = stripes[r]
+  if not t then
+    t = win.content:CreateTexture(nil, "BACKGROUND")
+    t:SetColorTexture(1, 1, 1, 0.04)
+    stripes[r] = t
+  end
+  return t
+end
+
+local function layout(grid, opts)
+  local content = win.content
+  local width = 0
   for c = 1, #grid[1] do width = width + (COL[c] or 120) end
   if opts.hideSurnames then width = width - 60 end
   for _, row in pairs(cells) do for _, fs in pairs(row) do fs:Hide() end end
+  for _, t in pairs(stripes) do t:Hide() end
+  local tr, tg, tb = App.Window.Rgb(App.Window.Current().title)
   for r, row in ipairs(grid) do
-    local x = 12
+    local x, y = 2, -(r - 1) * ROW_H - (r > 1 and 4 or 0)
+    if r > 1 and r % 2 == 1 then
+      local t = stripe(r)
+      t:ClearAllPoints(); t:SetPoint("TOPLEFT", content, "TOPLEFT", 0, y + 2)
+      t:SetSize(width + 4, ROW_H); t:Show()
+    end
     for c, text in ipairs(row) do
       local w = COL[c] or 120
       if c == 1 and opts.hideSurnames then w = w - 60 end
       local fs = cell(r, c)
-      fs:ClearAllPoints(); fs:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -32 - (r - 1) * 18)
-      fs:SetWidth(w); fs:SetText(text); fs:Show()
+      fs:ClearAllPoints(); fs:SetPoint("TOPLEFT", content, "TOPLEFT", x, y)
+      fs:SetWidth(w - 6); fs:SetText(text); fs:Show()
+      if r == 1 then fs:SetTextColor(tr, tg, tb) end
       x = x + w
     end
   end
-  frame:SetHeight(48 + #grid * 18)
-  frame:SetWidth(width)
+  headerLine = headerLine or content:CreateTexture(nil, "ARTWORK")
+  local e = App.Window.Current().edge
+  headerLine:SetColorTexture(e[1], e[2], e[3], 0.45)
+  headerLine:ClearAllPoints(); headerLine:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -ROW_H + 2)
+  headerLine:SetSize(width + 4, 1)
+  local height = #grid * ROW_H + 8
+  content:SetSize(width + 4, height)
+  return width + 4, height
+end
+
+function AltsWindow.Relayout()
+  if not (win and lastGrid) or AltsWindow._inLayout then return end
+  AltsWindow._inLayout = true
+  layout(lastGrid, lastOpts)
+  AltsWindow._inLayout = false
+end
+
+function AltsWindow.Render()
+  local opts = BagQuestsAltsDB.settings or {}
+  local grid = AltsWindow.Grid(BagQuestsAltsDB.characters, App.Domain, opts)
+  lastGrid, lastOpts = grid, opts
+  win:UpdateGrip()
+  win:SetRightText(string.format("%d characters", #grid - 1))
+  AltsWindow._inLayout = true
+  local w, h = layout(grid, opts)
+  win:AutoFit(w, h) -- fits the table until the player resizes the window
+  AltsWindow._inLayout = false
 end
 
 function AltsWindow.Toggle()

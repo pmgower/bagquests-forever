@@ -96,7 +96,7 @@ The minimap button: **left-click** tracker on/off, **right-click** settings,
 | `/bq alts` | Table of every character's progress (needs BagQuests_Alts) |
 | `/bq verify` | Our quest IDs vs your quest log, plus any ID mismatches |
 | `/bq pins` / `/bq minimap` / `/bq lock` | Toggle later-step pins, the minimap pin, tracker lock (lock also hides the resize grip) |
-| `/bq reset` | Put the tracker back at its default spot and size |
+| `/bq reset` | Put the tracker and alts windows back at their default spot and size |
 | `/bq theme` / `/bq theme <name>` | Cycle the tracker color scheme, or pick one: deepwater, frost, twilight, classic |
 | `/bq surnames` | Show or hide second names in the alts table (shown by default) |
 | `/bq forget <name>` | Drop a character from the alts table |

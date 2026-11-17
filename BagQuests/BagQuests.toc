@@ -29,6 +29,7 @@ Adapters\QuestState.lua
 Adapters\Waypoints.lua
 Adapters\Pins.lua
 App.lua
+UI\Window.lua
 UI\Tracker.lua
 UI\SettingsPanel.lua
 UI\MinimapButton.lua
