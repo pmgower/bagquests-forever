@@ -83,11 +83,17 @@ function Tracker.Pips(r)
   return table.concat(out, "")
 end
 
+-- " 12 slots" after the questline title: how big the reward bag is.
+function Tracker.SlotsText(line)
+  if not line.slots then return "" end
+  return string.format("  |cffbbbbbb%d slots|r", line.slots)
+end
+
 -- Pure text for one questline result, so tests can check it without frames.
 function Tracker.Lines(r, level)
   local s = r.steps[r.current].step
   local out = {
-    string.format("|cff%s%s|r  %s", theme.title, r.line.title, Tracker.Pips(r)),
+    string.format("|cff%s%s|r%s  %s", theme.title, r.line.title, Tracker.SlotsText(r.line), Tracker.Pips(r)),
     string.format("%s", s.title),
     (Tracker.LevelLine(r.line, s, level)),
     s.mapID and string.format("|cffbbbbbb%s %.1f, %.1f|r", zoneName(s.mapID), s.x or 0, s.y or 0)
@@ -365,7 +371,8 @@ local function layout(workable, level, locked)
   end
   lockedText = lockedText or content:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   local parts = {}
-  for _, r in ipairs(locked) do table.insert(parts, string.format("%s: unlocks at %d", r.line.title, r.line.minLevel)) end
+  for _, r in ipairs(locked) do table.insert(parts, string.format("%s%s: unlocks at %d", r.line.title,
+    r.line.slots and string.format(" (%d slots)", r.line.slots) or "", r.line.minLevel)) end
   if #parts > 0 then
     if shown > 0 then y = y + 6 end
     lockedText:ClearAllPoints(); lockedText:SetPoint("TOPLEFT", content, "TOPLEFT", 2, -y)

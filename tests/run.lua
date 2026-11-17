@@ -458,6 +458,14 @@ test("tracker drags from a step row", function()
   env.save()
 end)
 
+test("tracker shows the reward bag's slot count", function()
+  local env = Fake.Session(ADDONS, saved, warlock)
+  local r = env.ns.App.Workable(env.ns.App.last.results)[1]
+  truthy(env.ns.Tracker.Lines(r, 24)[1]:find(r.line.slots .. " slots"), "title line has slots")
+  eq(env.ns.Tracker.SlotsText({}), "", "no slots, no text")
+  env.save()
+end)
+
 test("alt tracking off: main addon works without the Alts module", function()
   local env = Fake.Session(ADDONS, {}, char({ name = "Solo", level = 30, alts = false }))
   eq(env.BagQuestsAltsDB, nil)
