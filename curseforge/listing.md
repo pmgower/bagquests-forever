@@ -48,7 +48,7 @@ It reads your quest history, so progress you made **before** installing the addo
 
 ## Features
 
-* **Guide-style tracker window**: bordered, movable and resizable, with four color schemes (`/bq theme`). Progress dots show which steps are done, current and skipped.
+* **Guide-style tracker window**: bordered, movable and resizable, with four color schemes (pick one in settings or with `/bq theme`). Progress dots show which steps are done, current and skipped.
 * **Level hints**: each step shows the level to start and the suggested level, colored like the game colors quests for your character.
 * **Pick what to track**: turn questlines on or off in the settings page or with `/bq track`. Right-click a step to skip it, shift-right-click to undo.
 * **World map and minimap pins**, plus a **minimap button**: left-click toggles the tracker, right-click opens settings, shift-click opens the alts table.
