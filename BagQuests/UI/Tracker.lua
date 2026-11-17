@@ -57,7 +57,7 @@ function Tracker.LevelLine(line, step, level)
   local greenRange = GetQuestGreenRange and tonumber(GetQuestGreenRange()) or nil
   local diff = ns.Domain.Difficulty(suggested, level, greenRange)
   local reqHex = fit == ns.Domain.FIT.BLOCKED and DIFFICULTY_HEX.red or "ffffff"
-  return string.format("|cffbbbbbbReq|r |cff%s%d|r  |cff666666||||r  |cffbbbbbbSuggested|r |cff%sLvl %d|r",
+  return string.format("|cffbbbbbbReq|r |cff%s%d|r  |cff666666|||r  |cffbbbbbbSuggested|r |cff%sLvl %d|r",
     reqHex, line.minLevel, DIFFICULTY_HEX[diff], suggested), fit
 end
 
