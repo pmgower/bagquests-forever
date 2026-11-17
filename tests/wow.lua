@@ -41,6 +41,9 @@ function Fake.Session(root, saved, char)
   env.GetRealmName = function() return "CAMWOW" end
   env.UnitClass = function() return "Warlock", char.class end
   env.UnitLevel = function() return char.level end
+  env.UnitRace = function() return "Undead", "Scourge" end
+  env.GetBuildInfo = function() return "1.16.1", "99999", "Nov 1 2026", 16001 end
+  env.GetLocale = function() return "enUS" end
   env.UnitFactionGroup = function() return char.faction end
   env.time = function() return 1763200000 end
   env.C_QuestLog = {

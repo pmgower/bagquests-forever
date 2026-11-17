@@ -17,9 +17,9 @@ Read this first if you're picking the addon up in a new thread or project.
   (folders `BagQuests`, `BagQuests_Alts`). Claude has copied betas there via device folder access.
 
 ## Architecture (FishShare style)
-`BagQuests/Core/Domain.lua` pure Lua (Questline, Step, Evaluate, LevelFit) ·
+`BagQuests/Core/Domain.lua` pure Lua (Questline, Step, Evaluate, LevelFit) · `Core/Feedback.lua` pure /bq feedback report ·
 `Data/*.lua` one file per questline · `Adapters/` (QuestState, Waypoints, Pins) ·
-`App.lua` use cases + events · `UI/` (Tracker, SettingsPanel, MinimapButton, Commands).
+`App.lua` use cases + events · `UI/` (Tracker, SettingsPanel, MinimapButton, FeedbackWindow, Commands).
 `BagQuests_Alts/` optional module (Roster + AltsWindow) hooked via `App.OnRefresh`,
 `App.RegisterCommand`, `App.OnSettings`.
 

@@ -23,7 +23,8 @@ coordinates come from the Forever Questie database; `/bq verify` confirms them i
 
 **Download:** [BagQuests: Forever on CurseForge](https://www.curseforge.com/projects/1808477)
 (awaiting CurseForge approval; the link works once the project is live).
-Source and issues: this repo.
+Source and issues: this repo. Found a bug? Type `/bq feedback` in game and paste the
+report into a [new issue](https://github.com/pmgower/bagquests-forever/issues/new/choose).
 
 ## Screenshots
 
@@ -104,6 +105,7 @@ The minimap button: **left-click** tracker on/off, **right-click** settings,
 | `/bq skip` / `/bq skip <n>` | Skip the current step of the top (or nth) tracker line |
 | `/bq unskip` | Undo every skipped step for this character |
 | `/bq settings` | Open the settings page |
+| `/bq feedback` | Report a bug: a window with the issue link and a report to copy (no character name) |
 
 ## Beta test plan
 

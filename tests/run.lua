@@ -488,5 +488,50 @@ test("alt tracking off: main addon works without the Alts module", function()
   truthy(hasPrint(env, "unknown command"), "alts command absent")
 end)
 
+test("feedback report: pure formatter", function()
+  local F = assert(loadfile(ROOT .. "BagQuests/Core/Feedback.lua"))("BagQuests", ns)
+  local text = F.Report({
+    version = "0.2.0-beta", altsLoaded = true,
+    client = { version = "1.16.1", build = "99999", date = "Nov 1 2026", interface = 16001, locale = "enUS" },
+    character = { level = 24, race = "Scourge", class = "WARLOCK", faction = "Horde", realm = "CAMWOW" },
+    settings = { tracker = true, locked = false, track_deviate_hides = false },
+    untracked = { "deviate_hides" },
+    results = { D.Evaluate(cozy, { level = 24, faction = "Horde", skipped = { cozy_sleeping_bag = 2 } }) },
+    questsInLog = { 79007 }, mismatches = { ["Some Quest"] = { expected = 1, actual = 2 } },
+    addons = { TomTom = true, Questie = false }, errors = { "boom" },
+  })
+  truthy(text:find("Addon: 0.2.0-beta (Alts module loaded)", 1, true), "version line")
+  truthy(text:find("Client: 1.16.1 build 99999 (Nov 1 2026), interface 16001, locale enUS", 1, true), "client line")
+  truthy(text:find("Character: level 24 Scourge WARLOCK, Horde, realm CAMWOW", 1, true), "character line")
+  truthy(text:find("Settings: locked=off, tracker=on\n", 1, true), "settings sorted, track_* left out")
+  truthy(text:find("Not tracked: deviate_hides", 1, true), "untracked")
+  truthy(text:find("cozy_sleeping_bag: in_progress 2/%d+, next step 3 \"[^\"]+\" %(next%), skipped to 2"), "questline line")
+  truthy(text:find("Our quests in log: 79007", 1, true), "log ids")
+  truthy(text:find("Some Quest (Forever 2, data 1)", 1, true), "mismatch")
+  truthy(text:find("Other addons: Questie not loaded, TomTom loaded", 1, true), "addons")
+  truthy(text:find("Errors this session: 1\n  boom", 1, true), "errors")
+end)
+
+test("/bq feedback opens the copy window without the character's name", function()
+  local env = Fake.Session(ADDONS, {}, char({ name = "Pheuneral", surname = "Undertaker", level = 24,
+    log = { { questID = 79007, title = "Cozy start" }, { questID = 12345, title = "Not ours" } } }))
+  env.SlashCmdList.BAGQUESTS("feedback")
+  local W = env.ns.FeedbackWindow
+  truthy(W.IsShown(), "window shown")
+  truthy(W.url:find("github.com/pmgower/bagquests-forever/issues", 1, true), "issue link")
+  local text = W.report
+  truthy(text:find("Addon: " .. env.ns.App.VERSION .. " (Alts module loaded)", 1, true), "version and alts")
+  truthy(text:find("level 24 Scourge WARLOCK, Horde, realm CAMWOW", 1, true), "character")
+  truthy(text:find("locale enUS", 1, true), "client")
+  truthy(text:find("Our quests in log: 79007\n", 1, true), "only our quest IDs")
+  truthy(not text:find("Pheuneral") and not text:find("Undertaker"), "no character name")
+  truthy(text:find("Errors this session: none", 1, true), "no errors")
+  truthy(hasPrint(env, "Ctrl%+C"), "chat hint")
+  env.SlashCmdList.BAGQUESTS("theme twilight")
+  truthy(W.IsShown(), "theme change recolors the open feedback window without errors")
+  env.ns.App.RecordError("x"); for _ = 1, 6 do env.ns.App.RecordError("y") end
+  eq(#env.ns.App.errors, 5, "error buffer capped")
+end)
+
 print(string.format("\n%d passed, %d failed", passed, failed))
 os.exit(failed == 0 and 0 or 1)

@@ -16,6 +16,7 @@ Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
 Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 
 Core\Domain.lua
+Core\Feedback.lua
 Data\CozySleepingBag.lua
 Data\StrongerThanSteel.lua
 Data\DeviateHides.lua
@@ -33,4 +34,5 @@ UI\Window.lua
 UI\Tracker.lua
 UI\SettingsPanel.lua
 UI\MinimapButton.lua
+UI\FeedbackWindow.lua
 UI\Commands.lua
