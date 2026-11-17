@@ -49,7 +49,7 @@ end
 -- Same colors the game uses for quest levels (QuestDifficultyColors).
 local DIFFICULTY_HEX = { red = "ff1a1a", orange = "ff8040", yellow = "ffd100", green = "40bf40", grey = "808080" }
 
--- "Req 14  Suggested Lvl 22": Req turns red when you can't pick the quest up
+-- "Req 14  |  Suggested Lvl 22" ("||" is WoW's escaped pipe): Req turns red when you can't pick the quest up
 -- yet; "Lvl 22" uses the game's quest colors for your level.
 function Tracker.LevelLine(line, step, level)
   local fit = ns.Domain.LevelFit(line, step, level)
@@ -57,7 +57,7 @@ function Tracker.LevelLine(line, step, level)
   local greenRange = GetQuestGreenRange and tonumber(GetQuestGreenRange()) or nil
   local diff = ns.Domain.Difficulty(suggested, level, greenRange)
   local reqHex = fit == ns.Domain.FIT.BLOCKED and DIFFICULTY_HEX.red or "ffffff"
-  return string.format("|cffbbbbbbReq|r |cff%s%d|r  |cffbbbbbbSuggested|r |cff%sLvl %d|r",
+  return string.format("|cffbbbbbbReq|r |cff%s%d|r  |cff666666||||r  |cffbbbbbbSuggested|r |cff%sLvl %d|r",
     reqHex, line.minLevel, DIFFICULTY_HEX[diff], suggested), fit
 end
 
