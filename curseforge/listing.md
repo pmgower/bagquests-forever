@@ -4,14 +4,15 @@ Written for **0.2.0**. Paste everything below the "Description" line into the pr
 **Description** field (CurseForge accepts Markdown). It covers the tracker redesign (#11),
 bug reporting (#13) and the window scroll bars (#14).
 
-**Screenshots (gallery order):**
-1. Tracker window, Frost Steel, a few lines showing (have: bagquests-active-screen-screenshot-001.png).
-2. World map with the bag pin on the next step and the dim pins for later steps.
-3. Hovering a tracker line: tooltip on the right and the waypoint arrow.
-4. Alts table (have: bagquests-alts-screenshot-001.png).
-5. Minimap: the bag pin, plus the minimap button tooltip.
-6. Settings page with Frost Steel and the "Report a bug" button (retake: the current ones show Deepwater and predate the button).
-7. Optional: the /bq feedback window, and the four color schemes side by side.
+**Screenshots (gallery order, files in Paul's Downloads):**
+1. Tracker window: bagquests-active-screen-screenshot-001.png
+2. Hover tooltip and waypoint arrow: bagquests-mouseover-tooltip-screenshot-001.png
+3. World map, continent view: bagquests-world-map-zoomed-out-screenshot-001.png
+4. World map, next step plus dim later step: bagquests-world-map-dimmed-screenshot-001.png
+5. Alts table: bagquests-alts-screenshot-001.png
+6. Minimap button tooltip: bagquests-mini-map-screenshot-001.png
+7. Settings with Report a bug: bagquests-settings-screenshot-002.png
+8. Bug report window: bagquests-bug-report-screenshot-001.png (retake on 0.2.0)
 Remove the 0.1.4 shots (the old tracker and the old alts window) from the gallery.
 
 **Project name:** BagQuests: Forever
