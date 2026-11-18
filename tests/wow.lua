@@ -91,6 +91,15 @@ function Fake.Session(root, saved, char)
       return setting
     end,
     CreateCheckbox = function() end,
+    CreateControlTextContainer = function()
+      local data = {}
+      return { Add = function(_, value, label) table.insert(data, { value = value, label = label }) end,
+        GetData = function() return data end }
+    end,
+    CreateDropdown = function(_, setting, options)
+      settingsUI.dropdowns = settingsUI.dropdowns or {}
+      settingsUI.dropdowns[setting.key] = { setting = setting, options = options() }
+    end,
     RegisterAddOnCategory = function() settingsUI.registered = true end,
     OpenToCategory = function(id) settingsUI.opened = id end,
   }

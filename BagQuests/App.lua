@@ -13,7 +13,7 @@ local db
 local listeners, commands = {}, {}
 
 App.DEFAULTS = { tracker = true, minimapPins = true, showLaterPins = true, locked = false,
-  minimapButton = true }
+  minimapButton = true, theme = "frost" }
 
 function App.Print(msg) DEFAULT_CHAT_FRAME:AddMessage("|cffe0a040BagQuests|r " .. tostring(msg)) end
 
@@ -85,6 +85,19 @@ function App.SkipStep(r)
   App.Skips()[r.line.id] = r.current
   App.Print(string.format("skipped \"%s\" (%s step %d). /bq unskip to undo.",
     r.steps[r.current].step.title, r.line.title, r.current))
+  App.Refresh()
+  return true
+end
+
+-- Undoes the last skipped step on one questline (shift-right-click).
+function App.UnskipStep(r)
+  if not r then return false end
+  local skips = App.Skips()
+  local to = skips[r.line.id]
+  if not to or to <= (r.gameDone or 0) then return false end
+  to = to - 1
+  skips[r.line.id] = to > (r.gameDone or 0) and to or nil
+  App.Print(string.format("unskipped %s step %d", r.line.title, to + 1))
   App.Refresh()
   return true
 end

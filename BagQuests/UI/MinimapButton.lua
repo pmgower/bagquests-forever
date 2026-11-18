@@ -41,7 +41,7 @@ function MinimapButton.Init(db)
   local obj = ldb:NewDataObject(NAME, {
     type = "launcher",
     text = "BagQuests",
-    icon = "Interface\\Icons\\INV_Misc_Bag_10",
+    icon = "Interface\\AddOns\\BagQuests\\Media\\logo",
     OnClick = function(_, button) MinimapButton.OnClick(button) end,
     OnTooltipShow = function(tt)
       for i, line in ipairs(MinimapButton.TooltipLines()) do

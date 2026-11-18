@@ -47,9 +47,9 @@ Questlines your character can't start yet are listed at the bottom:
 
 ## Level hints
 
-Each step on the tracker shows **Req** (the level needed to start the questline),
-**Suggested** (the quest's level, from Wowhead) and your level, colored green
-(good), yellow (a bit low) or red (too low to start). Questlines you can't start
+Each step on the tracker shows **Req.** (the level needed to start the questline,
+red if you can't pick it up yet) and **Sug.** (suggested: the quest's level), colored
+the way the game colors quest levels for you: red, orange, yellow, green or grey. Questlines you can't start
 yet show at the bottom as "unlocks at N". The alts table adds "sugg N" when a
 character is under the suggested level for its current step.
 
@@ -61,7 +61,14 @@ map and the alts table. `/bq track` does the same from chat.
 
 **Right-click** a tracker line to skip that step (like RestedXP), for when the
 game doesn't count something you did or you want to jump ahead. Skips are per
-character; `/bq unskip` undoes them.
+character; **shift-right-click** undoes the last skip on that line and `/bq unskip`
+undoes them all.
+
+The tracker is a bordered window you can drag, and resize from the grip in its
+bottom-right corner. Each questline shows a row of dots for its steps: filled
+for done, a ring for the current step, a gold ring with a slash for a skipped
+step. Hover a step for a waypoint arrow and a tooltip with the clicks. Four
+color schemes: `/bq theme`.
 
 ## Settings and minimap button
 
@@ -83,12 +90,14 @@ The minimap button: **left-click** tracker on/off, **right-click** settings,
 
 | Command | What it does |
 | --- | --- |
-| `/bq` | Show or hide the on-screen tracker (drag it to move) |
+| `/bq` | Show or hide the on-screen tracker (drag it to move, drag the corner grip to resize) |
 | `/bq way` | Waypoint to your next step (clicking a tracker line or pin does the same) |
 | `/bq status` | Every bag questline for this character |
 | `/bq alts` | Table of every character's progress (needs BagQuests_Alts) |
 | `/bq verify` | Our quest IDs vs your quest log, plus any ID mismatches |
-| `/bq pins` / `/bq minimap` / `/bq lock` | Toggle later-step pins, the minimap pin, tracker lock |
+| `/bq pins` / `/bq minimap` / `/bq lock` | Toggle later-step pins, the minimap pin, tracker lock (lock also hides the resize grip) |
+| `/bq reset` | Put the tracker and alts windows back at their default spot and size |
+| `/bq theme` / `/bq theme <name>` | Cycle the tracker color scheme, or pick one: frost, deepwater, twilight, classic |
 | `/bq surnames` | Show or hide second names in the alts table (shown by default) |
 | `/bq forget <name>` | Drop a character from the alts table |
 | `/bq track` / `/bq track <n>` | List questlines / turn the nth one on or off |
