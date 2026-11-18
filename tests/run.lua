@@ -432,6 +432,36 @@ test("tracker window: resize grip saves size, reset clears it, themes switch", f
   env2.save()
 end)
 
+test("window scroll bars: shown only when content overflows, drive the scroll", function()
+  local env = Fake.Session(ADDONS, saved, warlock)
+  local win = env.ns.Window.New({ name = "TestWin", store = {} })
+  local sc = win.scroll
+  local st = { v = 0, h = 0, vr = 0, hr = 0 }
+  sc.GetVerticalScrollRange = function() return st.vr end
+  sc.GetHorizontalScrollRange = function() return st.hr end
+  sc.GetVerticalScroll = function() return st.v end
+  sc.GetHorizontalScroll = function() return st.h end
+  sc.SetVerticalScroll = function(_, v) st.v = v end
+  sc.SetHorizontalScroll = function(_, v) st.h = v end
+  for _, bar in ipairs({ win.vbar, win.hbar }) do
+    bar.SetMinMaxValues = function(b, lo, hi) b._lo, b._hi = lo, hi end
+    bar.GetMinMaxValues = function(b) return b._lo, b._hi end
+    bar.SetValue = function(b, v) b._v = v; b._onOnValueChanged(b, v) end
+    bar.GetValue = function(b) return b._v end
+  end
+  win:UpdateScrollBars()
+  eq(win.vbar:IsShown(), false, "no vertical bar when it fits"); eq(win.hbar:IsShown(), false, "no horizontal bar")
+  st.vr, st.hr = 120, 300
+  sc._onOnScrollRangeChanged(sc)
+  eq(win.vbar:IsShown(), true, "vertical bar on overflow"); eq(win.hbar:IsShown(), true, "horizontal bar on overflow")
+  eq(win.hbar._hi, 300, "horizontal bar spans the range")
+  win.hbar:SetValue(150); eq(st.h, 150, "dragging the horizontal bar scrolls sideways")
+  win.vbar:SetValue(60); eq(st.v, 60, "dragging the vertical bar scrolls down")
+  sc._onOnMouseWheel(sc, -1); eq(win.vbar._v, 90, "wheel moves the vertical thumb")
+  st.hr = 0; win:UpdateScrollBars()
+  eq(win.hbar:IsShown(), false, "bar hides once the window is wide enough"); eq(st.h, 0, "and scroll resets")
+end)
+
 test("tracker hints: skipped pips, shift-right-click undo, tooltip, version", function()
   local env = Fake.Session(ADDONS, saved, warlock)
   local T = env.ns.Tracker

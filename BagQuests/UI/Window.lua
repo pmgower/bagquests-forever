@@ -84,7 +84,10 @@ function Window.New(opts)
   end
   self:ForwardDrag(f)
   -- Live re-flow while the grip is dragged.
-  f:SetScript("OnSizeChanged", function() if opts.onResize then opts.onResize() end end)
+  f:SetScript("OnSizeChanged", function()
+    if opts.onResize then opts.onResize() end
+    self:UpdateScrollBars()
+  end)
 
   self:BuildHeader()
   self:BuildScroll()
@@ -92,6 +95,7 @@ function Window.New(opts)
   -- Title bar and grip sit above the list so nothing in it takes their clicks.
   local base = num(f:GetFrameLevel(), 1)
   self.header:SetFrameLevel(base + 10); self.grip:SetFrameLevel(base + 10)
+  self.vbar:SetFrameLevel(base + 10); self.hbar:SetFrameLevel(base + 10)
 
   table.insert(windows, self)
   self:ApplyTheme()
@@ -172,7 +176,75 @@ function W:BuildScroll()
       local max = num(s:GetVerticalScrollRange(), 0)
       s:SetVerticalScroll(math.max(0, math.min(max, num(s:GetVerticalScroll(), 0) - delta * 30)))
     end
+    self:UpdateScrollBars()
   end)
+  self.vbar = self:BuildBar("VERTICAL")
+  self.hbar = self:BuildBar("HORIZONTAL")
+  scroll:SetScript("OnScrollRangeChanged", function() self:UpdateScrollBars() end)
+end
+
+-- Thin themed scroll bars. Each shows only when its content overflows: the
+-- vertical one in the right padding, the horizontal one in the bottom padding,
+-- both stopping short of the size grip.
+local BAR_W, BAR_INSET, BAR_GRIP = 6, 2, 20
+function W:BuildBar(orientation)
+  local f, scroll = self.frame, self.scroll
+  local bar = CreateFrame("Slider", nil, f)
+  bar:SetOrientation(orientation)
+  if orientation == "VERTICAL" then
+    bar:SetWidth(BAR_W)
+    bar:SetPoint("TOPRIGHT", -BAR_INSET, -(HEADER_H + 4))
+    bar:SetPoint("BOTTOMRIGHT", -BAR_INSET, BAR_GRIP)
+  else
+    bar:SetHeight(BAR_W)
+    bar:SetPoint("BOTTOMLEFT", PAD, BAR_INSET + 2)
+    bar:SetPoint("BOTTOMRIGHT", -BAR_GRIP, BAR_INSET + 2)
+  end
+  bar:SetMinMaxValues(0, 0); bar:SetValue(0)
+  if bar.SetValueStep then bar:SetValueStep(1) end
+  if bar.SetObeyStepOnDrag then bar:SetObeyStepOnDrag(false) end
+  bar:EnableMouse(true)
+  bar.track = bar:CreateTexture(nil, "BACKGROUND")
+  bar.track:SetAllPoints()
+  bar.thumb = bar:CreateTexture(nil, "OVERLAY")
+  bar.thumb:SetSize(BAR_W, 24)
+  bar:SetThumbTexture(bar.thumb)
+  bar:SetScript("OnValueChanged", function(_, value)
+    value = num(value, 0)
+    if orientation == "VERTICAL" then scroll:SetVerticalScroll(value) else scroll:SetHorizontalScroll(value) end
+  end)
+  -- Wheel over a bar scrolls the list too.
+  bar:EnableMouseWheel(true)
+  bar:SetScript("OnMouseWheel", function(_, delta)
+    local step = orientation == "VERTICAL" and 30 or 40
+    local lo, hi = bar:GetMinMaxValues()
+    bar:SetValue(math.max(num(lo, 0), math.min(num(hi, 0), num(bar:GetValue(), 0) - delta * step)))
+  end)
+  bar:Hide()
+  return bar
+end
+
+-- Match the bars to the scroll range: hide them when everything fits, size
+-- the thumb to the visible share and keep the scroll offset in range.
+function W:UpdateScrollBars()
+  local scroll = self.scroll
+  if not (scroll and self.vbar and self.hbar) then return end
+  local function sync(bar, range, offset, visible, setScroll)
+    range = math.max(0, num(range, 0))
+    if range < 1 then
+      bar:Hide(); setScroll(scroll, 0); return
+    end
+    local len = num(bar == self.vbar and bar:GetHeight() or bar:GetWidth(), 0)
+    local thumb = math.max(16, len * visible / (visible + range))
+    if bar == self.vbar then bar.thumb:SetSize(BAR_W, thumb) else bar.thumb:SetSize(thumb, BAR_W) end
+    bar:SetMinMaxValues(0, range)
+    bar:SetValue(math.min(range, math.max(0, num(offset, 0))))
+    bar:Show()
+  end
+  sync(self.vbar, scroll:GetVerticalScrollRange(), scroll:GetVerticalScroll(), num(scroll:GetHeight(), 1),
+    scroll.SetVerticalScroll)
+  sync(self.hbar, scroll:GetHorizontalScrollRange(), scroll:GetHorizontalScroll(), num(scroll:GetWidth(), 1),
+    scroll.SetHorizontalScroll)
 end
 
 function W:BuildGrip()
@@ -207,12 +279,14 @@ function W:UpdateGrip() if self:IsLocked() then self.grip:Hide() else self.grip:
 
 -- Until the player resizes the window, size it to its content.
 function W:AutoFit(contentW, contentH, maxH)
-  if self.store.size then return end
-  local b = self.opts.bounds or { 200, 80, 640, 900 }
-  if contentW then self.frame:SetWidth(math.max(b[1], math.min(b[3], contentW + PAD * 2))) end
-  if contentH then
-    self.frame:SetHeight(math.max(b[2], math.min(maxH or b[4], contentH + Window.CHROME_H)))
+  if not self.store.size then
+    local b = self.opts.bounds or { 200, 80, 640, 900 }
+    if contentW then self.frame:SetWidth(math.max(b[1], math.min(b[3], contentW + PAD * 2))) end
+    if contentH then
+      self.frame:SetHeight(math.max(b[2], math.min(maxH or b[4], contentH + Window.CHROME_H)))
+    end
   end
+  self:UpdateScrollBars()
 end
 
 -- Back to the default spot and auto-fit size.
@@ -238,6 +312,10 @@ function W:ApplyTheme()
   local r, g, b = Window.Rgb(theme.title)
   if self.titleText then self.titleText:SetTextColor(r, g, b) end
   if self.headerLine then self.headerLine:SetColorTexture(theme.edge[1], theme.edge[2], theme.edge[3], 0.55) end
+  for _, bar in ipairs({ self.vbar, self.hbar }) do
+    bar.track:SetColorTexture(theme.edge[1], theme.edge[2], theme.edge[3], 0.12)
+    bar.thumb:SetColorTexture(theme.edge[1], theme.edge[2], theme.edge[3], 0.85)
+  end
   for _, hl in ipairs(self.highlights) do hl:SetColorTexture(r, g, b, 0.10) end
   if self.opts.onTheme then self.opts.onTheme(theme) end
 end

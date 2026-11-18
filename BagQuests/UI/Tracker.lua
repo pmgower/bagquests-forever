@@ -116,7 +116,7 @@ end
 
 local function showTooltip(b)
   if not (b.result and GameTooltip) then return end
-  GameTooltip:SetOwner(b, "ANCHOR_LEFT")
+  GameTooltip:SetOwner(b, "ANCHOR_RIGHT")
   local tr, tg, tb = rgb(theme().title)
   GameTooltip:SetText(b.result.line.title, tr, tg, tb)
   for _, l in ipairs(Tracker.TooltipLines(b.result)) do GameTooltip:AddLine(l, 1, 1, 1) end
