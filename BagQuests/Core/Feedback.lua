@@ -48,12 +48,17 @@ end
 
 -- A link that opens the Bug report form with the report already in its
 -- "/bq feedback output" box (GitHub issue forms prefill a field from a
--- query parameter named after its id). Returns url, prefilled. When the
--- report makes the link too long, returns the plain form link and false, and
--- the player pastes the report by hand.
+-- query parameter named after its id). The same text also goes in `body`:
+-- that's what GitHub fills when the form isn't there (a plain new-issue page,
+-- e.g. before the forms reach the default branch). Returns url, prefilled.
+-- Too long for both: the form field only. Too long for that: the plain form
+-- link and false, and the player pastes the report by hand.
 function Feedback.IssueUrl(report)
-  local url = Feedback.BUG_FORM_URL .. "&" .. Feedback.FORM_FIELD .. "=" .. Feedback.UrlEncode(report)
-  if #url <= Feedback.MAX_URL then return url, true end
+  local enc = Feedback.UrlEncode(report)
+  local field = Feedback.BUG_FORM_URL .. "&" .. Feedback.FORM_FIELD .. "=" .. enc
+  local both = field .. "&body=" .. Feedback.UrlEncode("```\n" .. tostring(report) .. "\n```")
+  if #both <= Feedback.MAX_URL then return both, true end
+  if #field <= Feedback.MAX_URL then return field, true end
   return Feedback.BUG_FORM_URL, false
 end
 
