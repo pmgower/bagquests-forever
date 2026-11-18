@@ -11,19 +11,19 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: sudo apt-get update && sudo apt-get install -y lua5.1
       - run: lua5.1 tests/run.lua
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: sudo apt-get update && sudo apt-get install -y lua-check
       - run: luacheck . --formatter plain
   safety:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: sudo apt-get update && sudo apt-get install -y lua5.1
       - name: No risky game API calls, no new SavedVariables, no secret-exposing triggers
         run: lua5.1 tests/safety.lua

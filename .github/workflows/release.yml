@@ -11,9 +11,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: sudo apt-get update && sudo apt-get install -y lua5.1
       - run: lua5.1 tests/run.lua
+      # The release notes are CHANGELOG.md, so it must be written for this tag.
+      - name: CHANGELOG.md is for this version
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          head -n 1 CHANGELOG.md | grep -qx "## $v" || { echo "CHANGELOG.md must start with '## $v' (release notes for this tag)"; exit 1; }
   release:
     needs: test
     runs-on: ubuntu-latest
@@ -21,7 +26,7 @@ jobs:
       CF_API_KEY: ${{ secrets.CF_API_KEY }}
       GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: BigWigsMods/packager@v2
