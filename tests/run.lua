@@ -433,6 +433,63 @@ test("tracker window: resize grip saves size, reset clears it, themes switch", f
   env2.save()
 end)
 
+test("window scroll bars: shown only on overflow; drag the thumb or click the track", function()
+  local env = Fake.Session(ADDONS, saved, warlock)
+  local Win = env.ns.Window
+  eq(Win.ThumbLength(100, 100, 100), 50, "thumb shows the visible share")
+  eq(Win.ThumbLength(100, 10, 1000), 16, "thumb never shrinks below 16")
+  eq(Win.BarOffset(40, 100, 20, 300), 150, "halfway along the travel is halfway through the range")
+  eq(Win.BarOffset(-5, 100, 20, 300), 0); eq(Win.BarOffset(500, 100, 20, 300), 300, "clamped")
+  eq(Win.ThumbPos(150, 100, 20, 300), 40)
+  local win = Win.New({ name = "TestWin", store = {} })
+  local sc = win.scroll
+  local st = { v = 0, h = 0, vr = 0, hr = 0 }
+  sc.GetVerticalScrollRange = function() return st.vr end
+  sc.GetHorizontalScrollRange = function() return st.hr end
+  sc.GetVerticalScroll = function() return st.v end
+  sc.GetHorizontalScroll = function() return st.h end
+  sc.SetVerticalScroll = function(_, v) st.v = v end
+  sc.SetHorizontalScroll = function(_, v) st.h = v end
+  sc.GetWidth = function() return 100 end
+  sc.GetHeight = function() return 100 end
+  for _, bar in ipairs({ win.vbar, win.hbar }) do
+    bar.GetWidth = function() return 100 end
+    bar.GetHeight = function() return 100 end
+    bar.GetLeft = function() return 0 end
+    bar.GetTop = function() return 100 end
+    bar.GetEffectiveScale = function() return 1 end
+  end
+  win:UpdateScrollBars()
+  eq(win.vbar:IsShown(), false, "no vertical bar when it fits"); eq(win.hbar:IsShown(), false, "no horizontal bar")
+  st.vr, st.hr = 100, 100
+  sc._onOnScrollRangeChanged(sc)
+  eq(win.vbar:IsShown(), true, "vertical bar on overflow"); eq(win.hbar:IsShown(), true, "horizontal bar on overflow")
+  eq(win.hbar.thumbLen, 50, "thumb is half the bar when half the table shows")
+  local hb = win.hbar
+  env.GetCursorPosition = function() return 10, 0 end -- grab the thumb 10px in
+  hb._onOnMouseDown(hb, "LeftButton"); eq(st.h, 0, "grabbing the thumb doesn't jump")
+  env.GetCursorPosition = function() return 35, 0 end
+  hb._onOnUpdate(hb); eq(st.h, 50, "dragging the thumb scrolls sideways")
+  hb._onOnMouseUp(hb, "LeftButton")
+  eq(rawget(hb, "grab"), nil, "release stops dragging")
+  env.GetCursorPosition = function() return 0, 0 end -- click the far-left track
+  hb._onOnMouseDown(hb, "LeftButton"); eq(st.h, 0, "clicking the track jumps there")
+  hb._onOnMouseUp(hb, "LeftButton")
+  local vb = win.vbar
+  env.GetCursorPosition = function() return 0, 0 end -- bottom of the vertical track
+  vb._onOnMouseDown(vb, "LeftButton"); eq(st.v, 100, "vertical bar scrolls down"); vb._onOnMouseUp(vb, "LeftButton")
+  sc._onOnMouseWheel(sc, 1); eq(vb.offset, 70, "wheel keeps the thumb in step")
+  win.hbar:_onOnMouseWheel(-1); eq(st.h, 40, "wheel over the horizontal bar scrolls sideways")
+  local header = win.header
+  header._onOnDragStart(header)
+  st.hr = 0; sc._onOnScrollRangeChanged(sc)
+  eq(st.h, 40, "moving the window doesn't snap the table back")
+  st.hr = 100; header._onOnDragStop(header)
+  eq(st.h, 40, "scroll position kept after the move"); eq(win.hbar:IsShown(), true)
+  st.hr = 0; win:UpdateScrollBars()
+  eq(win.hbar:IsShown(), false, "bar hides once the window is wide enough"); eq(st.h, 0, "and scroll resets")
+end)
+
 test("tracker hints: skipped pips, shift-right-click undo, tooltip, version", function()
   local env = Fake.Session(ADDONS, saved, warlock)
   local T = env.ns.Tracker
