@@ -4,8 +4,9 @@ name: Release
 on:
   push:
     tags: ["v*"]
+# contents: write lets the packager create the GitHub release next to the CurseForge upload.
 permissions:
-  contents: read
+  contents: write
 jobs:
   test:
     runs-on: ubuntu-latest
