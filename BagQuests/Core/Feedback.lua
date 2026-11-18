@@ -78,11 +78,15 @@ end
 local function orNone(list) return #list > 0 and table.concat(list, ", ") or "none" end
 
 -- "tracker=on locked=off ..." without the per-questline track_* flags (those
--- are reported as "Not tracked").
+-- are reported as "Not tracked") or saved window spots and sizes (tables,
+-- which would print as memory addresses).
 local function settingsLine(settings)
   local parts = {}
   for _, k in ipairs(sortedKeys(settings)) do
-    if not tostring(k):match("^track_") then table.insert(parts, k .. "=" .. onOff(settings[k])) end
+    local v = settings[k]
+    if not tostring(k):match("^track_") and type(v) ~= "table" then
+      table.insert(parts, k .. "=" .. onOff(v))
+    end
   end
   return orNone(parts)
 end
