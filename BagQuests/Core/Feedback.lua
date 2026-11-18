@@ -14,7 +14,26 @@ local Feedback = {}
 ns.Feedback = Feedback
 
 Feedback.ISSUES_URL = "https://github.com/pmgower/bagquests-forever/issues/new/choose"
+Feedback.BUG_FORM_URL = "https://github.com/pmgower/bagquests-forever/issues/new?template=bug_report.yml"
+Feedback.FORM_FIELD = "feedback" -- id of the report box in .github/ISSUE_TEMPLATE/bug_report.yml
+Feedback.MAX_URL = 7000 -- GitHub refuses much longer links; fall back to the plain form past this
 Feedback.MAX_ERRORS = 5
+
+-- Percent-encodes everything but unreserved URL characters (RFC 3986).
+function Feedback.UrlEncode(text)
+  return (tostring(text):gsub("[^%w%-%._~]", function(c) return string.format("%%%02X", c:byte()) end))
+end
+
+-- A link that opens the Bug report form with the report already in its
+-- "/bq feedback output" box (GitHub issue forms prefill a field from a
+-- query parameter named after its id). Returns url, prefilled. When the
+-- report makes the link too long, returns the plain form link and false, and
+-- the player pastes the report by hand.
+function Feedback.IssueUrl(report)
+  local url = Feedback.BUG_FORM_URL .. "&" .. Feedback.FORM_FIELD .. "=" .. Feedback.UrlEncode(report)
+  if #url <= Feedback.MAX_URL then return url, true end
+  return Feedback.BUG_FORM_URL, false
+end
 
 local function onOff(v)
   if v == true then return "on" end

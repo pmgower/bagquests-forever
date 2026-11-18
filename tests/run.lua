@@ -519,13 +519,25 @@ test("feedback report: pure formatter", function()
   truthy(text:find("Errors this session: 1\n  boom", 1, true), "errors")
 end)
 
+test("feedback issue link: prefills the bug form, falls back when too long", function()
+  local F = ns.Feedback
+  local url, prefilled = F.IssueUrl("line 1\nlevel 24 & 50% \"x\"")
+  truthy(prefilled, "short report is prefilled")
+  eq(url, F.BUG_FORM_URL .. "&feedback=line%201%0Alevel%2024%20%26%2050%25%20%22x%22")
+  local decoded = url:match("&feedback=(.*)$"):gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end)
+  eq(decoded, "line 1\nlevel 24 & 50% \"x\"", "round trip")
+  local long, ok = F.IssueUrl(string.rep("x", F.MAX_URL))
+  eq(long, F.BUG_FORM_URL); eq(ok, false, "too long falls back to the plain form")
+end)
+
 test("/bq feedback opens the copy window without the character's name", function()
   local env = Fake.Session(ADDONS, {}, char({ name = "Pheuneral", surname = "Undertaker", level = 24,
     log = { { questID = 79007, title = "Cozy start" }, { questID = 12345, title = "Not ours" } } }))
   env.SlashCmdList.BAGQUESTS("feedback")
   local W = env.ns.FeedbackWindow
   truthy(W.IsShown(), "window shown")
-  truthy(W.url:find("github.com/pmgower/bagquests-forever/issues", 1, true), "issue link")
+  truthy(W.url:find("issues/new?template=bug_report.yml&feedback=BagQuests%20feedback%20report%0A", 1, true), "link prefills the bug form")
+  truthy(not W.url:find("Pheuneral"), "no character name in the link")
   local text = W.report
   truthy(text:find("Addon: " .. env.ns.App.VERSION .. " (Alts module loaded)", 1, true), "version and alts")
   truthy(text:find("level 24 Scourge WARLOCK, Horde, realm CAMWOW", 1, true), "character")

@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting! In game, type `/bq feedback`. A window opens with this page's link and a short report. Click the report, press Ctrl+C, and paste it below.
+        Thanks for reporting! In game, type `/bq feedback` and copy the link from the window into your browser. It opens this form with the `/bq feedback output` box already filled in. (If that box is empty, copy the report from the same window and paste it in.)
         The report has your level, class, race, faction, realm, settings and questline progress. It does not include your character's name.
   - type: textarea
     id: what-happened

@@ -12,6 +12,7 @@ local LABEL_H, URL_H, GAP = 16, 20, 6
 -- the text stays exactly what we generated.
 local function readOnly(box)
   box:SetAutoFocus(false)
+  box:SetMaxLetters(0) -- no length cap: the prefilled link can be a few thousand characters
   box:SetFontObject("ChatFontNormal")
   box:SetTextInsets(4, 4, 3, 3)
   box:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
@@ -71,9 +72,9 @@ local function build()
   win.frame:SetFrameStrata("DIALOG")
   tinsert(UISpecialFrames, "BagQuestsFeedbackWindow") -- Esc closes it
 
-  label("1. Copy this link (Ctrl+C) into your browser:")
+  label("") -- text set in Show: depends on whether the link carries the report
   urlBox = readOnly(CreateFrame("EditBox", nil, win.content))
-  label("2. Copy this report (Ctrl+C) and paste it into the issue:")
+  label("")
   reportBox = readOnly(CreateFrame("EditBox", nil, win.content))
   reportBox:SetMultiLine(true)
   applyTheme(ns.Window.Current())
@@ -81,15 +82,25 @@ local function build()
 end
 
 -- Opens the window with the link and report, report selected and ready to copy.
-function FeedbackWindow.Show(url, report)
+-- prefilled: the link already carries the report, so the report box is only
+-- a fallback (and the link box gets focus).
+function FeedbackWindow.Show(url, report, prefilled)
   if not win then build() end
   FeedbackWindow.url, FeedbackWindow.report = url, report -- for tests
+  if prefilled then
+    labels[1]:SetText("1. Copy this link (Ctrl+C) into your browser. It opens a filled-in bug report:")
+    labels[2]:SetText("2. Only if the report box on GitHub comes up empty, copy this into it:")
+  else
+    labels[1]:SetText("1. Copy this link (Ctrl+C) into your browser:")
+    labels[2]:SetText("2. Copy this report (Ctrl+C) and paste it into the issue:")
+  end
   setFixed(urlBox, url)
   setFixed(reportBox, report)
   FeedbackWindow.Relayout()
   win.frame:Show()
-  reportBox:SetFocus()
-  reportBox:HighlightText()
+  local focus = prefilled and urlBox or reportBox
+  focus:SetFocus()
+  focus:HighlightText()
 end
 
 function FeedbackWindow.IsShown() return win ~= nil and win.frame:IsShown() end
