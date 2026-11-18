@@ -185,43 +185,111 @@ end
 
 -- Thin themed scroll bars. Each shows only when its content overflows: the
 -- vertical one in the right padding, the horizontal one in the bottom padding,
--- both stopping short of the size grip.
-local BAR_W, BAR_INSET, BAR_GRIP = 6, 2, 20
+-- both stopping short of the size grip. Drag the thumb, or click the track to
+-- jump there and keep dragging. Built from a plain frame and our own cursor
+-- tracking rather than a Slider, so the whole bar takes the mouse.
+local BAR_W, BAR_INSET, BAR_GRIP, BAR_REACH = 8, 2, 20, 3
+
+-- Pure helpers (tested): thumb length for the visible share, scroll offset
+-- for a thumb position along the bar, and back again.
+function Window.ThumbLength(len, visible, range)
+  len, visible, range = num(len, 0), math.max(1, num(visible, 1)), math.max(0, num(range, 0))
+  return math.min(len, math.max(16, len * visible / (visible + range)))
+end
+
+function Window.BarOffset(pos, len, thumb, range)
+  local travel = num(len, 0) - num(thumb, 0)
+  if travel <= 0 then return 0 end
+  return math.max(0, math.min(1, num(pos, 0) / travel)) * math.max(0, num(range, 0))
+end
+
+function Window.ThumbPos(offset, len, thumb, range)
+  range = num(range, 0)
+  if range <= 0 then return 0 end
+  return math.max(0, math.min(1, num(offset, 0) / range)) * math.max(0, num(len, 0) - num(thumb, 0))
+end
+
 function W:BuildBar(orientation)
-  local f, scroll = self.frame, self.scroll
-  local bar = CreateFrame("Slider", nil, f)
-  bar:SetOrientation(orientation)
-  if orientation == "VERTICAL" then
+  local f = self.frame
+  local vertical = orientation == "VERTICAL"
+  local bar = CreateFrame("Frame", nil, f)
+  bar.vertical, bar.range, bar.thumbLen, bar.offset = vertical, 0, 16, 0
+  if vertical then
     bar:SetWidth(BAR_W)
     bar:SetPoint("TOPRIGHT", -BAR_INSET, -(HEADER_H + 4))
     bar:SetPoint("BOTTOMRIGHT", -BAR_INSET, BAR_GRIP)
+    if bar.SetHitRectInsets then bar:SetHitRectInsets(-BAR_REACH, -BAR_REACH, 0, 0) end
   else
     bar:SetHeight(BAR_W)
-    bar:SetPoint("BOTTOMLEFT", PAD, BAR_INSET + 2)
-    bar:SetPoint("BOTTOMRIGHT", -BAR_GRIP, BAR_INSET + 2)
+    bar:SetPoint("BOTTOMLEFT", PAD, BAR_INSET + 1)
+    bar:SetPoint("BOTTOMRIGHT", -BAR_GRIP, BAR_INSET + 1)
+    if bar.SetHitRectInsets then bar:SetHitRectInsets(0, 0, -BAR_REACH, -BAR_REACH) end
   end
-  bar:SetMinMaxValues(0, 0); bar:SetValue(0)
-  if bar.SetValueStep then bar:SetValueStep(1) end
-  if bar.SetObeyStepOnDrag then bar:SetObeyStepOnDrag(false) end
   bar:EnableMouse(true)
   bar.track = bar:CreateTexture(nil, "BACKGROUND")
   bar.track:SetAllPoints()
   bar.thumb = bar:CreateTexture(nil, "OVERLAY")
-  bar.thumb:SetSize(BAR_W, 24)
-  bar:SetThumbTexture(bar.thumb)
-  bar:SetScript("OnValueChanged", function(_, value)
-    value = num(value, 0)
-    if orientation == "VERTICAL" then scroll:SetVerticalScroll(value) else scroll:SetHorizontalScroll(value) end
+  bar.thumb:SetSize(BAR_W, 16)
+  bar.thumb:SetAlpha(0.8)
+  bar:SetScript("OnMouseDown", function(_, button)
+    if button ~= "LeftButton" then return end
+    local at = self:CursorAlong(bar)
+    local start = Window.ThumbPos(bar.offset, self:BarLength(bar), bar.thumbLen, bar.range)
+    -- On the thumb: keep the grab point. On the track: centre the thumb there.
+    bar.grab = (at >= start and at <= start + bar.thumbLen) and (at - start) or bar.thumbLen / 2
+    self:DragBar(bar)
+    bar:SetScript("OnUpdate", function()
+      if IsMouseButtonDown and not IsMouseButtonDown("LeftButton") then
+        bar.grab = nil; bar:SetScript("OnUpdate", nil); return
+      end
+      self:DragBar(bar)
+    end)
   end)
-  -- Wheel over a bar scrolls the list too.
+  bar:SetScript("OnMouseUp", function()
+    bar.grab = nil; bar:SetScript("OnUpdate", nil)
+    if not bar.hover then bar.thumb:SetAlpha(0.8) end
+  end)
+  bar:SetScript("OnEnter", function() bar.hover = true; bar.thumb:SetAlpha(1) end)
+  bar:SetScript("OnLeave", function() bar.hover = false; if not bar.grab then bar.thumb:SetAlpha(0.8) end end)
+  -- Wheel over a bar scrolls that way.
   bar:EnableMouseWheel(true)
   bar:SetScript("OnMouseWheel", function(_, delta)
-    local step = orientation == "VERTICAL" and 30 or 40
-    local lo, hi = bar:GetMinMaxValues()
-    bar:SetValue(math.max(num(lo, 0), math.min(num(hi, 0), num(bar:GetValue(), 0) - delta * step)))
+    self:SetBarOffset(bar, bar.offset - delta * (vertical and 30 or 40))
   end)
   bar:Hide()
   return bar
+end
+
+function W:BarLength(bar)
+  return num(bar.vertical and bar:GetHeight() or bar:GetWidth(), 0)
+end
+
+-- Cursor distance from the bar's start (top for vertical, left for horizontal).
+function W:CursorAlong(bar)
+  local x, y = GetCursorPosition()
+  local scale = num(bar:GetEffectiveScale(), 1)
+  if bar.vertical then return num(bar:GetTop(), 0) - num(y, 0) / scale end
+  return num(x, 0) / scale - num(bar:GetLeft(), 0)
+end
+
+function W:DragBar(bar)
+  if not bar.grab then return end
+  local pos = self:CursorAlong(bar) - bar.grab
+  self:SetBarOffset(bar, Window.BarOffset(pos, self:BarLength(bar), bar.thumbLen, bar.range))
+end
+
+-- Scroll to an offset along one bar and move its thumb to match.
+function W:SetBarOffset(bar, offset)
+  offset = math.max(0, math.min(bar.range, num(offset, 0)))
+  bar.offset = offset
+  if bar.vertical then self.scroll:SetVerticalScroll(offset) else self.scroll:SetHorizontalScroll(offset) end
+  local pos = Window.ThumbPos(offset, self:BarLength(bar), bar.thumbLen, bar.range)
+  bar.thumb:ClearAllPoints()
+  if bar.vertical then
+    bar.thumb:SetSize(BAR_W, bar.thumbLen); bar.thumb:SetPoint("TOP", bar, "TOP", 0, -pos)
+  else
+    bar.thumb:SetSize(bar.thumbLen, BAR_W); bar.thumb:SetPoint("LEFT", bar, "LEFT", pos, 0)
+  end
 end
 
 -- Match the bars to the scroll range: hide them when everything fits, size
@@ -229,22 +297,17 @@ end
 function W:UpdateScrollBars()
   local scroll = self.scroll
   if not (scroll and self.vbar and self.hbar) then return end
-  local function sync(bar, range, offset, visible, setScroll)
-    range = math.max(0, num(range, 0))
-    if range < 1 then
-      bar:Hide(); setScroll(scroll, 0); return
+  local function sync(bar, range, offset, visible)
+    bar.range = math.max(0, num(range, 0))
+    if bar.range < 1 then
+      bar.range = 0; self:SetBarOffset(bar, 0); bar:Hide(); return
     end
-    local len = num(bar == self.vbar and bar:GetHeight() or bar:GetWidth(), 0)
-    local thumb = math.max(16, len * visible / (visible + range))
-    if bar == self.vbar then bar.thumb:SetSize(BAR_W, thumb) else bar.thumb:SetSize(thumb, BAR_W) end
-    bar:SetMinMaxValues(0, range)
-    bar:SetValue(math.min(range, math.max(0, num(offset, 0))))
+    bar.thumbLen = Window.ThumbLength(self:BarLength(bar), visible, bar.range)
+    self:SetBarOffset(bar, offset)
     bar:Show()
   end
-  sync(self.vbar, scroll:GetVerticalScrollRange(), scroll:GetVerticalScroll(), num(scroll:GetHeight(), 1),
-    scroll.SetVerticalScroll)
-  sync(self.hbar, scroll:GetHorizontalScrollRange(), scroll:GetHorizontalScroll(), num(scroll:GetWidth(), 1),
-    scroll.SetHorizontalScroll)
+  sync(self.vbar, scroll:GetVerticalScrollRange(), scroll:GetVerticalScroll(), scroll:GetHeight())
+  sync(self.hbar, scroll:GetHorizontalScrollRange(), scroll:GetHorizontalScroll(), scroll:GetWidth())
 end
 
 function W:BuildGrip()
@@ -313,8 +376,8 @@ function W:ApplyTheme()
   if self.titleText then self.titleText:SetTextColor(r, g, b) end
   if self.headerLine then self.headerLine:SetColorTexture(theme.edge[1], theme.edge[2], theme.edge[3], 0.55) end
   for _, bar in ipairs({ self.vbar, self.hbar }) do
-    bar.track:SetColorTexture(theme.edge[1], theme.edge[2], theme.edge[3], 0.12)
-    bar.thumb:SetColorTexture(theme.edge[1], theme.edge[2], theme.edge[3], 0.85)
+    bar.track:SetColorTexture(theme.edge[1], theme.edge[2], theme.edge[3], 0.15)
+    bar.thumb:SetColorTexture(theme.edge[1], theme.edge[2], theme.edge[3], 1)
   end
   for _, hl in ipairs(self.highlights) do hl:SetColorTexture(r, g, b, 0.10) end
   if self.opts.onTheme then self.opts.onTheme(theme) end

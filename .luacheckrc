@@ -17,7 +17,7 @@ read_globals = {
   "C_Item", "C_Map", "C_QuestLog", "C_SuperTrack", "C_Texture", "C_Timer",
   "CreateFrame", "DEFAULT_CHAT_FRAME", "GameTooltip", "GetItemCount", "GetRealmName",
   "HBD_PINS_WORLDMAP_SHOW_CONTINENT", "IsQuestFlaggedCompleted", "LibStub",
-  "GetQuestGreenRange", "IsShiftKeyDown", "RAID_CLASS_COLORS", "Settings", "TomTom", "UIParent", "UISpecialFrames", "UiMapPoint",
+  "GetCursorPosition", "GetQuestGreenRange", "IsMouseButtonDown", "IsShiftKeyDown", "RAID_CLASS_COLORS", "Settings", "TomTom", "UIParent", "UISpecialFrames", "UiMapPoint",
   "UnitClass", "UnitFactionGroup", "UnitLevel", "UnitName", "issecretvalue",
   "time", "tinsert",
 }
