@@ -35,6 +35,29 @@ local function makeAdder(cat)
   end
 end
 
+-- Color scheme picker: the same four schemes as /bq theme. It recolors every
+-- BagQuests window (tracker, alts table) at once. Skipped quietly if this
+-- client's Settings API has no dropdown; /bq theme still works.
+function SettingsPanel.AddThemeDropdown(cat, settings)
+  local create = Settings.CreateDropdown or Settings.CreateDropDown
+  if not (create and Settings.CreateControlTextContainer) then return end
+  if settings.theme == nil then settings.theme = App.DEFAULTS.theme end
+  local setting = Settings.RegisterAddOnSetting(cat, "BagQuests_theme", "theme", settings, "string",
+    "Color scheme", App.DEFAULTS.theme)
+  if setting.SetValueChangedCallback then
+    setting:SetValueChangedCallback(function()
+      ns.Tracker.ApplyTheme(settings.theme); App.Refresh()
+    end)
+  end
+  local function options()
+    local c = Settings.CreateControlTextContainer()
+    for _, t in ipairs(ns.Window.THEMES) do c:Add(t.key, t.name) end
+    return c:GetData()
+  end
+  create(cat, setting, options, "Colors for every BagQuests window. Same as /bq theme.")
+  return setting
+end
+
 function SettingsPanel.Init(settings)
   if not (Settings and Settings.RegisterVerticalLayoutCategory) then return end -- no Settings API
   category = Settings.RegisterVerticalLayoutCategory("BagQuests: Forever")
@@ -42,6 +65,7 @@ function SettingsPanel.Init(settings)
   for _, row in ipairs(SettingsPanel.ROWS) do
     add(settings, row[1], row[2], row[3], App.DEFAULTS[row[1]], onChanged)
   end
+  SettingsPanel.AddThemeDropdown(category, settings)
   -- One "Track" checkbox per questline: untick the ones you don't care about.
   for _, line in ipairs(ns.Domain.All()) do
     local tip = string.format("%s%s. Required level %d. Unticked lines leave the tracker, map and alts table.",
