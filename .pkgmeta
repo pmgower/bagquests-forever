@@ -13,3 +13,9 @@ ignore:
   - .github
   - README.md
   - "*.zip"
+
+# CurseForge and GitHub release notes come from this hand-written file, not
+# the commit list. Keep it to the version being released (short, player-facing).
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown

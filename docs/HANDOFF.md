@@ -9,8 +9,10 @@ Read this first if you're picking the addon up in a new thread or project.
 - **CurseForge:** project ID **1808477** (author Pheubar). First file 0.1.4-beta uploaded by
   hand 2026-11-15, awaiting first approval. Link: https://www.curseforge.com/projects/1808477
 - **Auto-release:** `.github/workflows/release.yml` + `.pkgmeta` (BigWigs packager). Repo secret
-  `CF_API_KEY` is set. Push a tag `vX.Y.Z` (or `vX.Y.Z-beta`) to build and upload. Not yet
-  exercised; the first tag should be watched.
+  `CF_API_KEY` is set. Push a tag `vX.Y.Z` (or `vX.Y.Z-beta`) to build and upload. First used
+  for v0.2.0 (2026-11-18). Release notes come from `CHANGELOG.md`, never the commit list (Paul's
+  rule): before tagging, rewrite it as a short player-facing summary starting with `## X.Y.Z`.
+  The release workflow fails if the first line doesn't match the tag.
 - **Local checkout:** every addon repo lives under `D:\OneDrive\code\wow-addons\` on Paul's PC
   (this one at `D:\OneDrive\code\wow-addons\bagquests-forever`).
 - **Paul's install:** `D:\Blizzard Games\World of Warcraft\_forever_\Interface\AddOns\`
