@@ -556,19 +556,19 @@ end)
 test("feedback report: pure formatter", function()
   local F = assert(loadfile(ROOT .. "BagQuests/Core/Feedback.lua"))("BagQuests", ns)
   local text = F.Report({
-    version = "0.2.0-beta", altsLoaded = true,
+    version = "0.2.0", altsLoaded = true,
     client = { version = "1.16.1", build = "99999", date = "Nov 1 2026", interface = 16001, locale = "enUS" },
     character = { level = 24, race = "Scourge", class = "WARLOCK", faction = "Horde", realm = "CAMWOW" },
-    settings = { tracker = true, locked = false, track_deviate_hides = false },
+    settings = { tracker = true, locked = false, track_deviate_hides = false, point = { "CENTER" }, size = { 300, 200 } },
     untracked = { "deviate_hides" },
     results = { D.Evaluate(cozy, { level = 24, faction = "Horde", skipped = { cozy_sleeping_bag = 2 } }) },
     questsInLog = { 79007 }, mismatches = { ["Some Quest"] = { expected = 1, actual = 2 } },
     addons = { TomTom = true, Questie = false }, errors = { "boom" },
   })
-  truthy(text:find("Addon: 0.2.0-beta (Alts module loaded)", 1, true), "version line")
+  truthy(text:find("Addon: 0.2.0 (Alts module loaded)", 1, true), "version line")
   truthy(text:find("Client: 1.16.1 build 99999 (Nov 1 2026), interface 16001, locale enUS", 1, true), "client line")
   truthy(text:find("Character: level 24 Scourge WARLOCK, Horde, realm CAMWOW", 1, true), "character line")
-  truthy(text:find("Settings: locked=off, tracker=on\n", 1, true), "settings sorted, track_* left out")
+  truthy(text:find("Settings: locked=off, tracker=on\n", 1, true), "settings sorted, track_* and window tables left out")
   truthy(text:find("Not tracked: deviate_hides", 1, true), "untracked")
   truthy(text:find("cozy_sleeping_bag: in_progress 2/%d+, next step 3 \"[^\"]+\" %(next%), skipped to 2"), "questline line")
   truthy(text:find("Our quests in log: 79007", 1, true), "log ids")

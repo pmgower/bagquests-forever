@@ -31,11 +31,11 @@ alts table, Forever two-part names (`UnitName("player")` 2nd value = surname).
 Everything else in `Data/` comes from community guides.
 
 ## Roadmap
-1. ~~Alliance route for Cozy Sleeping Bag.~~ Done for 0.2.0-beta: a questline can have
+1. ~~Alliance route for Cozy Sleeping Bag.~~ Done for 0.2.0: a questline can have
    `routes` per faction. Alliance swaps only the first two stops (Westfall, then the Barrens)
    and starts with quest 79008, not 79007; Stonetalon onward is shared. Not verified in game.
 2. Confirm remaining quest IDs/coords in play (`/bq verify`).
-3. ~~More bag quests.~~ 0.2.0-beta also adds Deviate Hide Pack, Hunting Satchel, Night Watch,
+3. ~~More bag quests.~~ 0.2.0 also adds Deviate Hide Pack, Hunting Satchel, Night Watch,
    Ooze-covered Bag, Explorer's Knapsack, Thawpelt Sack and Hyjal Postal Satchel. Data comes
    from Paul's installed Forever QuestieDB (`AddOns\QuestieDB\QuestieDB_Forever.toc`: CBOR +
    base64 rows in TOC metadata; item field 6 = questRewards). Never assume Classic facts hold in
@@ -45,5 +45,5 @@ Everything else in `Data/` comes from community guides.
    right-click or `/bq skip`, `/bq unskip`; skips per character in `BagQuestsDB.skips`).
    Still to do: filter by minimum bag size and level (each line has `slots` and `minLevel`).
 4. First tagged release through the pipeline. Paul's rule: the first release after CurseForge
-   approves 0.1.4-beta is **0.2.0-beta** with everything in it (no skipping numbers before that).
+   approves 0.1.4-beta is **0.2.0** with everything in it (no skipping numbers before that).
 5. Later/nice-to-have: professions per alt (Altoholic-style), sharing with friends.

@@ -2,7 +2,7 @@
 ## Title: BagQuests: Forever
 ## Notes: Tracks the quest chains that reward bags (Cozy Sleeping Bag, Stronger than Steel) with an on-screen next step and map pins.
 ## Author: Pheubar
-## Version: 0.2.0-beta
+## Version: 0.2.0
 ## SavedVariables: BagQuestsDB
 ## IconTexture: Interface\AddOns\BagQuests\Media\logo
 ## OptionalDeps: TomTom
