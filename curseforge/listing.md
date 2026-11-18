@@ -1,8 +1,18 @@
 # CurseForge listing: copy and paste
 
-Written for **0.2.0-beta**. Paste everything below the "Description" line into the project's
-**Description** field (CurseForge accepts Markdown). It assumes the tracker redesign (#11) is in
-the release.
+Written for **0.2.0**. Paste everything below the "Description" line into the project's
+**Description** field (CurseForge accepts Markdown). It covers the tracker redesign (#11),
+bug reporting (#13) and the window scroll bars (#14).
+
+**Screenshots (gallery order):**
+1. Tracker window, Frost Steel, a few lines showing (have: bagquests-active-screen-screenshot-001.png).
+2. World map with the bag pin on the next step and the dim pins for later steps.
+3. Hovering a tracker line: tooltip on the right and the waypoint arrow.
+4. Alts table (have: bagquests-alts-screenshot-001.png).
+5. Minimap: the bag pin, plus the minimap button tooltip.
+6. Settings page with Frost Steel and the "Report a bug" button (retake: the current ones show Deepwater and predate the button).
+7. Optional: the /bq feedback window, and the four color schemes side by side.
+Remove the 0.1.4 shots (the old tracker and the old alts window) from the gallery.
 
 **Project name:** BagQuests: Forever
 
@@ -48,12 +58,13 @@ It reads your quest history, so progress you made **before** installing the addo
 
 ## Features
 
-* **Guide-style tracker window**: bordered, movable and resizable, with four color schemes (pick one in settings or with `/bq theme`). Progress dots show which steps are done, current and skipped.
+* **Guide-style tracker window**: bordered, movable and resizable (with scroll bars when it's small), in four color schemes (pick one in settings or with `/bq theme`). Each line shows how many bag slots it gives, and progress dots show which steps are done, current and skipped.
 * **Level hints**: each step shows the level to start and the suggested level, colored like the game colors quests for your character.
 * **Pick what to track**: turn questlines on or off in the settings page or with `/bq track`. Right-click a step to skip it, shift-right-click to undo.
-* **World map and minimap pins**, plus a **minimap button**: left-click toggles the tracker, right-click opens settings, shift-click opens the alts table.
+* **World map and minimap pins**, plus a **minimap button**: left-click toggles the tracker, right-click opens settings, shift-click opens the alts table, ctrl-click reports a bug.
 * **Settings page** under Options > AddOns.
-* **Alts table** (optional `BagQuests_Alts` module): every character's progress side by side. Disable the module to turn alt tracking off.
+* **Alts table** (optional `BagQuests_Alts` module): every character's progress side by side, in the same resizable window. Disable the module to turn alt tracking off.
+* **Easy bug reports**: `/bq feedback`, the settings page or a ctrl-click on the minimap button opens a GitHub bug report with your version and details already filled in. If BagQuests itself hits an error, it offers the same report once per session (you can turn that off in settings).
 
 ## Commands
 
@@ -69,6 +80,7 @@ It reads your quest history, so progress you made **before** installing the addo
 | `/bq pins` / `/bq minimap` | Toggle dim pins for later steps, or the minimap pin |
 | `/bq alts` | Table of all your characters (needs BagQuests_Alts) |
 | `/bq verify` | Compare our quest IDs with your quest log |
+| `/bq feedback` | Report a bug with the details filled in |
 | `/bq settings` | Open the settings page |
 | `/bq help` | List all commands |
 
@@ -78,9 +90,9 @@ It reads your quest history, so progress you made **before** installing the addo
 * **TomTom** is optional. Waypoints use it when it is installed.
 * Map pins use the bundled HereBeDragons library. No other addons are required.
 
-## Beta: please help verify
+## Please help verify
 
-The routes and quest IDs come from the Forever quest database and community guides, and are being checked in game. If you see a red **"Quest ID mismatch"** line in chat, or a pin in the wrong spot, please post the output of `/bq verify` in the comments or open an issue on GitHub. The Alliance route for the Cozy Sleeping Bag is new in this version, so reports from Alliance players are especially welcome.
+The routes and quest IDs come from the Forever quest database and community guides, and are being checked in game. If you see a red **"Quest ID mismatch"** line in chat, or a pin in the wrong spot, use `/bq feedback`: it fills in your quest progress and any ID mismatches for us. Or post in the comments. The Alliance route for the Cozy Sleeping Bag is new in this version, so reports from Alliance players are especially welcome.
 
 ## Coming next
 
