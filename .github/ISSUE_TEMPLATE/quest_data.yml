@@ -1,0 +1,29 @@
+name: Wrong quest data
+description: A step points to the wrong place, a quest ID or level is wrong, or a bag questline is missing.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        WoW Forever changed some quests compared to Classic, so field reports like this are how the data gets fixed.
+        `/bq verify` in game lists our quest IDs next to your quest log, which helps too.
+  - type: input
+    id: questline
+    attributes:
+      label: Questline
+      description: For example, Cozy Sleeping Bag or Stronger than Steel.
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What's wrong, and what's right?
+      description: The step, the NPC or location it should be, the quest ID, or the level. Coordinates (from the map or a coordinates addon) help a lot.
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: /bq feedback output
+      description: Type `/bq feedback` in game, copy the report, and paste it here.
+      render: text

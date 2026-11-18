@@ -12,10 +12,21 @@ local category
 SettingsPanel.ROWS = {
   { "tracker", "Show on-screen tracker", "The next step for each bag questline. Same as /bq." },
   { "locked", "Lock tracker position", "Stops the tracker from being dragged." },
-  { "minimapButton", "Show minimap button", "Left-click: tracker. Right-click: settings. Shift-click: alts table." },
+  { "minimapButton", "Show minimap button", "Left-click: tracker. Right-click: settings. Shift-click: alts table. Ctrl-click: report a bug." },
   { "minimapPins", "Show next step on the minimap", "A bag icon on the minimap when you're in that zone." },
   { "showLaterPins", "Show later steps on the world map", "Dim bag icons for the steps after your current one." },
+  { "errorPrompt", "Offer a bug report when BagQuests hits an error",
+    "Once per session, if BagQuests itself has a Lua error, a small window offers to open a filled-in bug report." },
 }
+
+-- "Report a bug" button: opens the /bq feedback window. Skipped quietly if
+-- this client's Settings API has no button row; /bq feedback still works.
+function SettingsPanel.AddReportButton(layout)
+  if not (layout and layout.AddInitializer and CreateSettingsButtonInitializer) then return false end
+  layout:AddInitializer(CreateSettingsButtonInitializer("Found a bug?", "Report a bug",
+    function() App.OpenFeedback() end, "Opens a link to a GitHub bug report with your details filled in. Same as /bq feedback.", true))
+  return true
+end
 
 local function onChanged(key)
   if key == "minimapButton" and ns.MinimapButton then ns.MinimapButton.Apply(App.DB()) end
@@ -60,7 +71,8 @@ end
 
 function SettingsPanel.Init(settings)
   if not (Settings and Settings.RegisterVerticalLayoutCategory) then return end -- no Settings API
-  category = Settings.RegisterVerticalLayoutCategory("BagQuests: Forever")
+  local layout
+  category, layout = Settings.RegisterVerticalLayoutCategory("BagQuests: Forever")
   local add = makeAdder(category)
   for _, row in ipairs(SettingsPanel.ROWS) do
     add(settings, row[1], row[2], row[3], App.DEFAULTS[row[1]], onChanged)
@@ -75,6 +87,7 @@ function SettingsPanel.Init(settings)
       tostring(line.slots or "?"), line.minLevel), tip, true, onChanged)
   end
   for _, hook in ipairs(App.SettingsHooks()) do pcall(hook, add) end
+  SettingsPanel.AddReportButton(layout)
   Settings.RegisterAddOnCategory(category)
 end
 

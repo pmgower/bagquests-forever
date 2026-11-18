@@ -79,6 +79,7 @@ builtins = {
           line.title, tostring(line.slots or "?"), line.minLevel, line.faction and (", " .. line.faction) or ""))
       end
       App.Print("/bq track <number> to turn one on or off") end },
+  { "feedback", "Report a bug: a link that opens a GitHub bug report with the details filled in", function() App.OpenFeedback() end },
   { "settings", "Open the settings page (Options > AddOns)", function() ns.SettingsPanel.Open() end },
   { "help", "This list", function()
       App.Print("v" .. App.VERSION .. " commands:")

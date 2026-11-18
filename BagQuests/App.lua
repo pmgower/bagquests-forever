@@ -12,10 +12,19 @@ App.Domain = Domain
 local db
 local listeners, commands = {}, {}
 
-App.DEFAULTS = { tracker = true, minimapPins = true, showLaterPins = true, locked = false,
+App.DEFAULTS = { errorPrompt = true, tracker = true, minimapPins = true, showLaterPins = true, locked = false,
   minimapButton = true, theme = "frost" }
 
 function App.Print(msg) DEFAULT_CHAT_FRAME:AddMessage("|cffe0a040BagQuests|r " .. tostring(msg)) end
+
+-- The last few module errors this session, for /bq feedback. Kept in memory
+-- only, never saved.
+App.errors = {}
+function App.RecordError(msg)
+  table.insert(App.errors, tostring(msg))
+  local max = ns.Feedback and ns.Feedback.MAX_ERRORS or 5
+  while #App.errors > max do table.remove(App.errors, 1) end
+end
 
 function App.Settings() return db.settings end
 function App.DB() return db end
@@ -142,7 +151,7 @@ function App.Refresh()
   local who = App.Character()
   for _, fn in ipairs(listeners) do
     local ok, err = pcall(fn, snap, results, who)
-    if not ok then App.Print("module error: " .. tostring(err)) end
+    if not ok then App.RecordError(err); App.Print("module error: " .. tostring(err)) end
   end
 end
 
@@ -169,6 +178,73 @@ function App.NextStep()
   if not App.last then return nil end
   local r = App.Workable(App.last.results)[1]
   if r then return r.steps[r.current].step, r end
+end
+
+-- Everything /bq feedback reports, read from the game (see Core/Feedback.lua).
+function App.FeedbackContext()
+  App.Refresh()
+  local who, snap = App.Character(), App.last and App.last.snap or ns.QuestState.Snapshot()
+  local client = {}
+  if GetBuildInfo then client.version, client.build, client.date, client.interface = GetBuildInfo() end
+  client.locale = GetLocale and GetLocale() or nil
+  local race
+  if UnitRace then race = select(2, UnitRace("player")) end -- race token, e.g. "Scourge"
+
+  local untracked = {}
+  for _, line in ipairs(Domain.All()) do
+    if not App.IsTracked(line) then table.insert(untracked, line.id) end
+  end
+  local ours, inLog = Domain.TrackedQuestIDs(), {}
+  for id in pairs(snap.active or {}) do if ours[id] then table.insert(inLog, id) end end
+  table.sort(inLog)
+
+  return {
+    version = App.VERSION,
+    altsLoaded = App.Commands().alts ~= nil,
+    client = client,
+    character = { level = snap.level, race = race, class = who.class, faction = snap.faction, realm = who.realm },
+    settings = db and db.settings or {},
+    untracked = untracked,
+    results = App.last and App.last.results or {},
+    questsInLog = inLog,
+    mismatches = db and db.mismatches or {},
+    addons = { TomTom = TomTom ~= nil, Questie = QuestieLoader ~= nil },
+    errors = App.errors,
+  }
+end
+
+function App.FeedbackReport() return ns.Feedback.Report(App.FeedbackContext()) end
+
+-- Opens the feedback window. Shared by /bq feedback, the settings button,
+-- the minimap button and the error prompt.
+function App.OpenFeedback()
+  local report = App.FeedbackReport()
+  local url, prefilled = ns.Feedback.IssueUrl(report)
+  ns.FeedbackWindow.Show(url, report, prefilled)
+  App.Print(prefilled and "Copy the link from the window (Ctrl+C) into your browser: it opens a bug report with the details filled in."
+    or "Copy the link and the report from the window (Ctrl+C), then paste the report into the issue.")
+end
+
+-- Lua errors: we chain onto the game's error handler (so WoW's popup, BugSack
+-- and friends still see every error first) and only react to errors from our
+-- own files. The first one each session offers a bug report.
+App.errorPrompted = false
+function App.OnLuaError(msg, stack)
+  if not ns.Feedback.IsOurs(msg, stack) then return end
+  App.RecordError(ns.Feedback.ShortError(msg, stack))
+  if App.errorPrompted or not db or db.settings.errorPrompt == false or not ns.FeedbackWindow then return end
+  App.errorPrompted = true
+  local function show() ns.FeedbackWindow.ShowErrorPrompt(tostring(msg)) end
+  if C_Timer and C_Timer.After then C_Timer.After(0, show) else show() end -- not from inside the error
+end
+
+if geterrorhandler and seterrorhandler then
+  local previous = geterrorhandler()
+  seterrorhandler(function(msg, ...)
+    local stack = debugstack and debugstack(3, 20, 0) or nil
+    pcall(App.OnLuaError, msg, stack) -- never let our handler cause another error
+    if previous then return previous(msg, ...) end
+  end)
 end
 
 ---------------------------------------------------------------- events
