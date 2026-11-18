@@ -121,8 +121,13 @@ end
 function W:ForwardDrag(child)
   child:EnableMouse(true)
   child:RegisterForDrag("LeftButton")
-  child:SetScript("OnDragStart", function() if not self:IsLocked() then self.frame:StartMoving() end end)
-  child:SetScript("OnDragStop", function() self.frame:StopMovingOrSizing(); self:SavePosition() end)
+  child:SetScript("OnDragStart", function()
+    if not self:IsLocked() then self.moving = true; self.frame:StartMoving() end
+  end)
+  child:SetScript("OnDragStop", function()
+    self.frame:StopMovingOrSizing(); self:SavePosition()
+    self.moving = false; self:UpdateScrollBars()
+  end)
 end
 
 function W:BuildHeader()
@@ -297,6 +302,9 @@ end
 function W:UpdateScrollBars()
   local scroll = self.scroll
   if not (scroll and self.vbar and self.hbar) then return end
+  -- While the window is dragged the client can briefly report no scroll
+  -- range; resyncing then would snap the table back to the top-left.
+  if self.moving then return end
   local function sync(bar, range, offset, visible)
     bar.range = math.max(0, num(range, 0))
     if bar.range < 1 then

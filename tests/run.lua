@@ -478,6 +478,13 @@ test("window scroll bars: shown only on overflow; drag the thumb or click the tr
   env.GetCursorPosition = function() return 0, 0 end -- bottom of the vertical track
   vb._onOnMouseDown(vb, "LeftButton"); eq(st.v, 100, "vertical bar scrolls down"); vb._onOnMouseUp(vb, "LeftButton")
   sc._onOnMouseWheel(sc, 1); eq(vb.offset, 70, "wheel keeps the thumb in step")
+  win.hbar:_onOnMouseWheel(-1); eq(st.h, 40, "wheel over the horizontal bar scrolls sideways")
+  local header = win.header
+  header._onOnDragStart(header)
+  st.hr = 0; sc._onOnScrollRangeChanged(sc)
+  eq(st.h, 40, "moving the window doesn't snap the table back")
+  st.hr = 100; header._onOnDragStop(header)
+  eq(st.h, 40, "scroll position kept after the move"); eq(win.hbar:IsShown(), true)
   st.hr = 0; win:UpdateScrollBars()
   eq(win.hbar:IsShown(), false, "bar hides once the window is wide enough"); eq(st.h, 0, "and scroll resets")
 end)
