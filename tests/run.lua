@@ -310,6 +310,13 @@ test("settings page: registered, checkboxes change behavior, alts row added", fu
   eq(env.BagQuestsDB.minimapIcon.hide, true, "hide saved for LibDBIcon")
   cb.minimapButton:SetValue(true)
   eq(env.minimapIcon.shown, true)
+  local dd = env.settingsUI.dropdowns and env.settingsUI.dropdowns.theme
+  truthy(dd, "color scheme dropdown")
+  eq(#dd.options, 4, "all four schemes offered")
+  eq(dd.options[1].label, "Frost Steel", "default listed first")
+  dd.setting:SetValue("twilight")
+  eq(env.ns.Window.Current().key, "twilight", "dropdown applies the scheme")
+  dd.setting:SetValue("frost")
   cb.hideSurnames:SetValue(true)
   eq(env.BagQuestsAltsDB.settings.hideSurnames, true, "alts setting stored in alts DB")
   cb.hideSurnames:SetValue(false)
