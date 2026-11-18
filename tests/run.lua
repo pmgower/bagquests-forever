@@ -329,7 +329,8 @@ test("minimap button: tooltip shows next step, clicks route correctly", function
   local env = Fake.Session(ADDONS, saved, warlock)
   local lines = env.ns.MinimapButton.TooltipLines()
   truthy(lines[2]:find("Next:"), "next step line")
-  truthy(lines[#lines]:find("Shift"), "alts hint when module loaded")
+  truthy(lines[#lines - 1]:find("Shift"), "alts hint when module loaded")
+  truthy(lines[#lines]:find("Ctrl"), "report-a-bug hint last")
   local before = env.BagQuestsDB.settings.tracker
   env.ns.MinimapButton.OnClick("LeftButton")
   eq(env.BagQuestsDB.settings.tracker, not before, "left-click toggles tracker")
@@ -550,6 +551,118 @@ test("alt tracking off: main addon works without the Alts module", function()
   eq(env.BagQuestsAltsDB, nil)
   env.SlashCmdList.BAGQUESTS("alts")
   truthy(hasPrint(env, "unknown command"), "alts command absent")
+end)
+
+test("feedback report: pure formatter", function()
+  local F = assert(loadfile(ROOT .. "BagQuests/Core/Feedback.lua"))("BagQuests", ns)
+  local text = F.Report({
+    version = "0.2.0-beta", altsLoaded = true,
+    client = { version = "1.16.1", build = "99999", date = "Nov 1 2026", interface = 16001, locale = "enUS" },
+    character = { level = 24, race = "Scourge", class = "WARLOCK", faction = "Horde", realm = "CAMWOW" },
+    settings = { tracker = true, locked = false, track_deviate_hides = false },
+    untracked = { "deviate_hides" },
+    results = { D.Evaluate(cozy, { level = 24, faction = "Horde", skipped = { cozy_sleeping_bag = 2 } }) },
+    questsInLog = { 79007 }, mismatches = { ["Some Quest"] = { expected = 1, actual = 2 } },
+    addons = { TomTom = true, Questie = false }, errors = { "boom" },
+  })
+  truthy(text:find("Addon: 0.2.0-beta (Alts module loaded)", 1, true), "version line")
+  truthy(text:find("Client: 1.16.1 build 99999 (Nov 1 2026), interface 16001, locale enUS", 1, true), "client line")
+  truthy(text:find("Character: level 24 Scourge WARLOCK, Horde, realm CAMWOW", 1, true), "character line")
+  truthy(text:find("Settings: locked=off, tracker=on\n", 1, true), "settings sorted, track_* left out")
+  truthy(text:find("Not tracked: deviate_hides", 1, true), "untracked")
+  truthy(text:find("cozy_sleeping_bag: in_progress 2/%d+, next step 3 \"[^\"]+\" %(next%), skipped to 2"), "questline line")
+  truthy(text:find("Our quests in log: 79007", 1, true), "log ids")
+  truthy(text:find("Some Quest (Forever 2, data 1)", 1, true), "mismatch")
+  truthy(text:find("Other addons: Questie not loaded, TomTom loaded", 1, true), "addons")
+  truthy(text:find("Errors this session: 1\n  boom", 1, true), "errors")
+end)
+
+test("feedback issue link: prefills the bug form, falls back when too long", function()
+  local F = ns.Feedback
+  local url, prefilled = F.IssueUrl("line 1\nlevel 24 & 50% \"x\"")
+  truthy(prefilled, "short report is prefilled")
+  eq(url, F.BUG_FORM_URL .. "&feedback=line%201%0Alevel%2024%20%26%2050%25%20%22x%22"
+    .. "&body=%60%60%60%0Aline%201%0Alevel%2024%20%26%2050%25%20%22x%22%0A%60%60%60", "form field plus plain body")
+  local decoded = url:match("&feedback=([^&]*)"):gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end)
+  eq(decoded, "line 1\nlevel 24 & 50% \"x\"", "round trip")
+  local mid = F.IssueUrl(string.rep("x", math.floor(F.MAX_URL * 0.6)))
+  truthy(mid:find("&feedback=", 1, true) and not mid:find("&body=", 1, true), "too long for both: form field only")
+  local long, ok = F.IssueUrl(string.rep("x", F.MAX_URL))
+  eq(long, F.BUG_FORM_URL); eq(ok, false, "too long falls back to the plain form")
+end)
+
+test("/bq feedback opens the copy window without the character's name", function()
+  local env = Fake.Session(ADDONS, {}, char({ name = "Pheuneral", surname = "Undertaker", level = 24,
+    log = { { questID = 79007, title = "Cozy start" }, { questID = 12345, title = "Not ours" } } }))
+  env.SlashCmdList.BAGQUESTS("feedback")
+  local W = env.ns.FeedbackWindow
+  truthy(W.IsShown(), "window shown")
+  truthy(W.url:find("issues/new?template=bug_report.yml&feedback=BagQuests%20feedback%20report%0A", 1, true), "link prefills the bug form")
+  truthy(not W.url:find("Pheuneral"), "no character name in the link")
+  local text = W.report
+  truthy(text:find("Addon: " .. env.ns.App.VERSION .. " (Alts module loaded)", 1, true), "version and alts")
+  truthy(text:find("level 24 Scourge WARLOCK, Horde, realm CAMWOW", 1, true), "character")
+  truthy(text:find("locale enUS", 1, true), "client")
+  truthy(text:find("Our quests in log: 79007\n", 1, true), "only our quest IDs")
+  truthy(not text:find("Pheuneral") and not text:find("Undertaker"), "no character name")
+  truthy(text:find("Errors this session: none", 1, true), "no errors")
+  truthy(hasPrint(env, "Ctrl%+C"), "chat hint")
+  env.SlashCmdList.BAGQUESTS("theme twilight")
+  truthy(W.IsShown(), "theme change recolors the open feedback window without errors")
+  env.ns.App.RecordError("x"); for _ = 1, 6 do env.ns.App.RecordError("y") end
+  eq(#env.ns.App.errors, 5, "error buffer capped")
+end)
+
+test("feedback errors: only ours, short stack", function()
+  local F = ns.Feedback
+  truthy(F.IsOurs("Interface/AddOns/BagQuests/UI/Tracker.lua:12: boom"), "our file in the message")
+  truthy(F.IsOurs("boom", "[string]\nInterface\\AddOns\\BagQuests_Alts\\Roster.lua:3: in function"), "Alts, backslashes, in the stack")
+  truthy(not F.IsOurs("Interface/AddOns/Questie/Q.lua:1: x", "Interface/AddOns/Questie/Q.lua:1"), "someone else's error")
+  local stack = "Interface/AddOns/Other/a.lua:1\n" .. string.rep("Interface/AddOns/BagQuests/App.lua:9: in function\n", 6)
+  local short = F.ShortError("boom", stack)
+  local _, lines = short:gsub("\n", "")
+  eq(lines, 4, "message + 4 of our stack lines")
+  truthy(not short:find("Other"), "other addons' frames dropped")
+  truthy(#F.ShortError(string.rep("x", 2000)) <= F.MAX_ERROR_LEN + 3, "long error cut")
+end)
+
+test("addon errors: prompt once, report includes it, other addons ignored", function()
+  local env = Fake.Session(ADDONS, {}, char({ name = "Err", level = 20 }))
+  local W, App = env.ns.FeedbackWindow, env.ns.App
+  env.raiseError("Interface/AddOns/Questie/Q.lua:1: not ours")
+  eq(#App.errors, 0, "other addon's error not recorded"); truthy(not W.IsPromptShown(), "no prompt")
+  eq(#env.handled, 1, "previous handler still gets every error")
+  env.raiseError("Interface/AddOns/BagQuests/UI/Tracker.lua:42: attempt to index nil",
+    "Interface/AddOns/BagQuests/UI/Tracker.lua:42: in function <Render>")
+  eq(#env.handled, 2, "previous handler gets ours too")
+  truthy(W.IsPromptShown(), "prompt shown"); truthy(W.promptMessage:find("Tracker.lua:42", 1, true), "prompt names the error")
+  W.reportButton._onOnClick()
+  truthy(not W.IsPromptShown(), "prompt closes"); truthy(W.IsShown(), "feedback window opens")
+  truthy(W.report:find("Errors this session: 1\n  Interface/AddOns/BagQuests/UI/Tracker.lua:42", 1, true), "error in report")
+  truthy(W.report:find("in function <Render>", 1, true), "stack line in report")
+  W.promptMessage = nil
+  env.raiseError("Interface/AddOns/BagQuests/App.lua:1: again")
+  eq(W.promptMessage, nil, "only one prompt per session"); eq(#App.errors, 2, "still recorded")
+end)
+
+test("addon errors: setting off means no prompt", function()
+  local env = Fake.Session(ADDONS, {}, char({ name = "Quiet", level = 20 }))
+  env.settingsUI.checkboxes.errorPrompt:SetValue(false)
+  env.raiseError("Interface/AddOns/BagQuests/App.lua:1: boom")
+  truthy(not env.ns.FeedbackWindow.IsPromptShown(), "no prompt"); eq(#env.ns.App.errors, 1, "still recorded")
+end)
+
+test("report a bug from the UI: settings button and minimap ctrl-click", function()
+  local env = Fake.Session(ADDONS, {}, char({ name = "Ui", level = 20 }))
+  local b = env.settingsUI.buttons[1]
+  eq(b and b.text, "Report a bug", "settings button")
+  b.click(); truthy(env.ns.FeedbackWindow.IsShown(), "button opens the window")
+  local found = false
+  for _, l in ipairs(env.ns.MinimapButton.TooltipLines()) do if l:find("Ctrl%-click") then found = true end end
+  truthy(found, "minimap tooltip hint")
+  env.ns.FeedbackWindow.url = nil
+  env.ctrlDown = true; env.ns.MinimapButton.OnClick("LeftButton"); env.ctrlDown = false
+  truthy(env.ns.FeedbackWindow.url, "ctrl-click opens feedback")
 end)
 
 print(string.format("\n%d passed, %d failed", passed, failed))
