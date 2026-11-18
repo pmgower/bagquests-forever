@@ -82,10 +82,13 @@ function Fake.Session(root, saved, char)
   end
   env.HBD_PINS_WORLDMAP_SHOW_CONTINENT = 2
   -- Settings API (Options > AddOns)
-  local settingsUI = { checkboxes = {}, opened = nil, registered = false }
+  local settingsUI = { checkboxes = {}, buttons = {}, opened = nil, registered = false }
   env.settingsUI = settingsUI
   env.Settings = {
-    RegisterVerticalLayoutCategory = function(name) return { name = name, GetID = function() return 42 end } end,
+    RegisterVerticalLayoutCategory = function(name)
+      local layout = { AddInitializer = function(_, init) table.insert(settingsUI.buttons, init) end }
+      return { name = name, GetID = function() return 42 end }, layout
+    end,
     RegisterAddOnSetting = function(_, variable, key, tbl, _, label)
       local setting = { key = key, tbl = tbl, label = label }
       function setting:SetValueChangedCallback(fn) self.cb = fn end
@@ -108,6 +111,18 @@ function Fake.Session(root, saved, char)
   }
   env.shiftDown = false
   env.IsShiftKeyDown = function() return env.shiftDown end
+  env.ctrlDown = false
+  env.IsControlKeyDown = function() return env.ctrlDown end
+  env.CreateSettingsButtonInitializer = function(name, text, onClick, tooltip)
+    return { name = name, text = text, click = onClick, tooltip = tooltip }
+  end
+  -- The game's Lua error handler: BagQuests chains onto whatever is there.
+  env.handled = {}
+  local errorHandler = function(msg) table.insert(env.handled, msg) end
+  env.geterrorhandler = function() return errorHandler end
+  env.seterrorhandler = function(fn) errorHandler = fn end
+  env.raiseError = function(msg, stack) env.stack = stack; return errorHandler(msg) end
+  env.debugstack = function() return env.stack or "" end
   env.minimapIcon = minimap
   for k, v in pairs(saved) do env[k] = v end
 

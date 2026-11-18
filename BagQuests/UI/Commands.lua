@@ -79,12 +79,7 @@ builtins = {
           line.title, tostring(line.slots or "?"), line.minLevel, line.faction and (", " .. line.faction) or ""))
       end
       App.Print("/bq track <number> to turn one on or off") end },
-  { "feedback", "Report a bug: a link that opens a GitHub bug report with the details filled in", function()
-      local report = App.FeedbackReport()
-      local url, prefilled = ns.Feedback.IssueUrl(report)
-      ns.FeedbackWindow.Show(url, report, prefilled)
-      App.Print(prefilled and "Copy the link from the window (Ctrl+C) into your browser: it opens a bug report with the details filled in."
-        or "Copy the link and the report from the window (Ctrl+C), then paste the report into the issue.") end },
+  { "feedback", "Report a bug: a link that opens a GitHub bug report with the details filled in", function() App.OpenFeedback() end },
   { "settings", "Open the settings page (Options > AddOns)", function() ns.SettingsPanel.Open() end },
   { "help", "This list", function()
       App.Print("v" .. App.VERSION .. " commands:")

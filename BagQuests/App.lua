@@ -12,7 +12,7 @@ App.Domain = Domain
 local db
 local listeners, commands = {}, {}
 
-App.DEFAULTS = { tracker = true, minimapPins = true, showLaterPins = true, locked = false,
+App.DEFAULTS = { errorPrompt = true, tracker = true, minimapPins = true, showLaterPins = true, locked = false,
   minimapButton = true, theme = "frost" }
 
 function App.Print(msg) DEFAULT_CHAT_FRAME:AddMessage("|cffe0a040BagQuests|r " .. tostring(msg)) end
@@ -214,6 +214,38 @@ function App.FeedbackContext()
 end
 
 function App.FeedbackReport() return ns.Feedback.Report(App.FeedbackContext()) end
+
+-- Opens the feedback window. Shared by /bq feedback, the settings button,
+-- the minimap button and the error prompt.
+function App.OpenFeedback()
+  local report = App.FeedbackReport()
+  local url, prefilled = ns.Feedback.IssueUrl(report)
+  ns.FeedbackWindow.Show(url, report, prefilled)
+  App.Print(prefilled and "Copy the link from the window (Ctrl+C) into your browser: it opens a bug report with the details filled in."
+    or "Copy the link and the report from the window (Ctrl+C), then paste the report into the issue.")
+end
+
+-- Lua errors: we chain onto the game's error handler (so WoW's popup, BugSack
+-- and friends still see every error first) and only react to errors from our
+-- own files. The first one each session offers a bug report.
+App.errorPrompted = false
+function App.OnLuaError(msg, stack)
+  if not ns.Feedback.IsOurs(msg, stack) then return end
+  App.RecordError(ns.Feedback.ShortError(msg, stack))
+  if App.errorPrompted or not db or db.settings.errorPrompt == false or not ns.FeedbackWindow then return end
+  App.errorPrompted = true
+  local function show() ns.FeedbackWindow.ShowErrorPrompt(tostring(msg)) end
+  if C_Timer and C_Timer.After then C_Timer.After(0, show) else show() end -- not from inside the error
+end
+
+if geterrorhandler and seterrorhandler then
+  local previous = geterrorhandler()
+  seterrorhandler(function(msg, ...)
+    local stack = debugstack and debugstack(3, 20, 0) or nil
+    pcall(App.OnLuaError, msg, stack) -- never let our handler cause another error
+    if previous then return previous(msg, ...) end
+  end)
+end
 
 ---------------------------------------------------------------- events
 

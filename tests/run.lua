@@ -329,7 +329,8 @@ test("minimap button: tooltip shows next step, clicks route correctly", function
   local env = Fake.Session(ADDONS, saved, warlock)
   local lines = env.ns.MinimapButton.TooltipLines()
   truthy(lines[2]:find("Next:"), "next step line")
-  truthy(lines[#lines]:find("Shift"), "alts hint when module loaded")
+  truthy(lines[#lines - 1]:find("Shift"), "alts hint when module loaded")
+  truthy(lines[#lines]:find("Ctrl"), "report-a-bug hint last")
   local before = env.BagQuestsDB.settings.tracker
   env.ns.MinimapButton.OnClick("LeftButton")
   eq(env.BagQuestsDB.settings.tracker, not before, "left-click toggles tracker")
@@ -550,6 +551,58 @@ test("/bq feedback opens the copy window without the character's name", function
   truthy(W.IsShown(), "theme change recolors the open feedback window without errors")
   env.ns.App.RecordError("x"); for _ = 1, 6 do env.ns.App.RecordError("y") end
   eq(#env.ns.App.errors, 5, "error buffer capped")
+end)
+
+test("feedback errors: only ours, short stack", function()
+  local F = ns.Feedback
+  truthy(F.IsOurs("Interface/AddOns/BagQuests/UI/Tracker.lua:12: boom"), "our file in the message")
+  truthy(F.IsOurs("boom", "[string]\nInterface\\AddOns\\BagQuests_Alts\\Roster.lua:3: in function"), "Alts, backslashes, in the stack")
+  truthy(not F.IsOurs("Interface/AddOns/Questie/Q.lua:1: x", "Interface/AddOns/Questie/Q.lua:1"), "someone else's error")
+  local stack = "Interface/AddOns/Other/a.lua:1\n" .. string.rep("Interface/AddOns/BagQuests/App.lua:9: in function\n", 6)
+  local short = F.ShortError("boom", stack)
+  local _, lines = short:gsub("\n", "")
+  eq(lines, 4, "message + 4 of our stack lines")
+  truthy(not short:find("Other"), "other addons' frames dropped")
+  truthy(#F.ShortError(string.rep("x", 2000)) <= F.MAX_ERROR_LEN + 3, "long error cut")
+end)
+
+test("addon errors: prompt once, report includes it, other addons ignored", function()
+  local env = Fake.Session(ADDONS, {}, char({ name = "Err", level = 20 }))
+  local W, App = env.ns.FeedbackWindow, env.ns.App
+  env.raiseError("Interface/AddOns/Questie/Q.lua:1: not ours")
+  eq(#App.errors, 0, "other addon's error not recorded"); truthy(not W.IsPromptShown(), "no prompt")
+  eq(#env.handled, 1, "previous handler still gets every error")
+  env.raiseError("Interface/AddOns/BagQuests/UI/Tracker.lua:42: attempt to index nil",
+    "Interface/AddOns/BagQuests/UI/Tracker.lua:42: in function <Render>")
+  eq(#env.handled, 2, "previous handler gets ours too")
+  truthy(W.IsPromptShown(), "prompt shown"); truthy(W.promptMessage:find("Tracker.lua:42", 1, true), "prompt names the error")
+  W.reportButton._onOnClick()
+  truthy(not W.IsPromptShown(), "prompt closes"); truthy(W.IsShown(), "feedback window opens")
+  truthy(W.report:find("Errors this session: 1\n  Interface/AddOns/BagQuests/UI/Tracker.lua:42", 1, true), "error in report")
+  truthy(W.report:find("in function <Render>", 1, true), "stack line in report")
+  W.promptMessage = nil
+  env.raiseError("Interface/AddOns/BagQuests/App.lua:1: again")
+  eq(W.promptMessage, nil, "only one prompt per session"); eq(#App.errors, 2, "still recorded")
+end)
+
+test("addon errors: setting off means no prompt", function()
+  local env = Fake.Session(ADDONS, {}, char({ name = "Quiet", level = 20 }))
+  env.settingsUI.checkboxes.errorPrompt:SetValue(false)
+  env.raiseError("Interface/AddOns/BagQuests/App.lua:1: boom")
+  truthy(not env.ns.FeedbackWindow.IsPromptShown(), "no prompt"); eq(#env.ns.App.errors, 1, "still recorded")
+end)
+
+test("report a bug from the UI: settings button and minimap ctrl-click", function()
+  local env = Fake.Session(ADDONS, {}, char({ name = "Ui", level = 20 }))
+  local b = env.settingsUI.buttons[1]
+  eq(b and b.text, "Report a bug", "settings button")
+  b.click(); truthy(env.ns.FeedbackWindow.IsShown(), "button opens the window")
+  local found = false
+  for _, l in ipairs(env.ns.MinimapButton.TooltipLines()) do if l:find("Ctrl%-click") then found = true end end
+  truthy(found, "minimap tooltip hint")
+  env.ns.FeedbackWindow.url = nil
+  env.ctrlDown = true; env.ns.MinimapButton.OnClick("LeftButton"); env.ctrlDown = false
+  truthy(env.ns.FeedbackWindow.url, "ctrl-click opens feedback")
 end)
 
 print(string.format("\n%d passed, %d failed", passed, failed))

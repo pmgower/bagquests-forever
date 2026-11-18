@@ -20,11 +20,14 @@ function MinimapButton.TooltipLines()
   table.insert(lines, "|cffbbbbbbLeft-click:|r tracker on/off")
   table.insert(lines, "|cffbbbbbbRight-click:|r settings")
   if App.Commands()["alts"] then table.insert(lines, "|cffbbbbbbShift-click:|r alts table") end
+  table.insert(lines, "|cffbbbbbbCtrl-click:|r report a bug")
   return lines
 end
 
 function MinimapButton.OnClick(button)
-  if button == "RightButton" then
+  if IsControlKeyDown and IsControlKeyDown() then
+    App.OpenFeedback()
+  elseif button == "RightButton" then
     ns.SettingsPanel.Open()
   elseif IsShiftKeyDown and IsShiftKeyDown() and App.Commands()["alts"] then
     App.Commands()["alts"].fn("")

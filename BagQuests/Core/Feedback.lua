@@ -19,6 +19,28 @@ Feedback.FORM_FIELD = "feedback" -- id of the report box in .github/ISSUE_TEMPLA
 Feedback.MAX_URL = 7000 -- GitHub refuses much longer links; fall back to the plain form past this
 Feedback.MAX_ERRORS = 5
 
+Feedback.MAX_ERROR_LEN = 600 -- one error plus its short stack, so the link stays short
+
+-- Is this Lua error from BagQuests (or BagQuests_Alts)? Looks for our folder in
+-- the message or the stack, so other addons' errors are left alone.
+function Feedback.IsOurs(msg, stack)
+  local hay = tostring(msg or "") .. "\n" .. tostring(stack or "")
+  return hay:find("AddOns[/\\]BagQuests") ~= nil
+end
+
+-- The error message plus the first few stack lines that point into our code,
+-- cut to MAX_ERROR_LEN.
+function Feedback.ShortError(msg, stack)
+  local out, n = { tostring(msg or "?") }, 0
+  for line in tostring(stack or ""):gmatch("[^\n]+") do
+    if n >= 4 then break end
+    if line:find("AddOns[/\\]BagQuests") then table.insert(out, "  " .. line); n = n + 1 end
+  end
+  local s = table.concat(out, "\n")
+  if #s > Feedback.MAX_ERROR_LEN then s = s:sub(1, Feedback.MAX_ERROR_LEN) .. "..." end
+  return s
+end
+
 -- Percent-encodes everything but unreserved URL characters (RFC 3986).
 function Feedback.UrlEncode(text)
   return (tostring(text):gsub("[^%w%-%._~]", function(c) return string.format("%%%02X", c:byte()) end))

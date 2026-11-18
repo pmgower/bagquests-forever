@@ -105,7 +105,7 @@ The minimap button: **left-click** tracker on/off, **right-click** settings,
 | `/bq skip` / `/bq skip <n>` | Skip the current step of the top (or nth) tracker line |
 | `/bq unskip` | Undo every skipped step for this character |
 | `/bq settings` | Open the settings page |
-| `/bq feedback` | Report a bug: a window with the issue link and a report to copy (no character name) |
+| `/bq feedback` | Report a bug: a link that opens a GitHub bug report with your details filled in (no character name). Also: **Report a bug** on the settings page, Ctrl-click the minimap button, or **Report it** on the prompt that appears if BagQuests hits an error |
 
 ## Beta test plan
 

@@ -104,3 +104,54 @@ function FeedbackWindow.Show(url, report, prefilled)
 end
 
 function FeedbackWindow.IsShown() return win ~= nil and win.frame:IsShown() end
+
+---------------------------------------------------------------- error prompt
+-- A small window, once per session, when BagQuests itself hits a Lua error:
+-- "Report it" opens the feedback window (the error is already in the report).
+
+local prompt, promptText
+
+local function button(parent, text, onClick)
+  local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+  b:SetSize(110, 22)
+  b:SetText(text)
+  b:SetScript("OnClick", onClick)
+  return b
+end
+
+local function buildPrompt()
+  prompt = ns.Window.New({
+    name = "BagQuestsErrorPrompt", title = "BagQuests ran into a problem", store = {},
+    defaultPoint = { "TOP", "TOP", 0, -160 }, defaultSize = { 380, 150 },
+    bounds = { 300, 120, 700, 400 },
+    onTheme = function(theme)
+      if promptText then promptText:SetTextColor(ns.Window.Rgb(theme.title)) end
+    end,
+  })
+  local f, c = prompt.frame, prompt.content
+  f:SetFrameStrata("DIALOG")
+  tinsert(UISpecialFrames, "BagQuestsErrorPrompt") -- Esc closes it
+  c:SetSize(prompt:ContentWidth(), 60)
+  promptText = c:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  promptText:SetPoint("TOPLEFT", c, "TOPLEFT", 0, -2)
+  promptText:SetWidth(prompt:ContentWidth())
+  promptText:SetJustifyH("LEFT")
+  FeedbackWindow.reportButton = button(f, "Report it", function() f:Hide(); ns.App.OpenFeedback() end)
+  FeedbackWindow.reportButton:SetPoint("BOTTOMRIGHT", f, "BOTTOM", -4, 20)
+  FeedbackWindow.laterButton = button(f, "Not now", function() f:Hide() end)
+  FeedbackWindow.laterButton:SetPoint("BOTTOMLEFT", f, "BOTTOM", 4, 20)
+  prompt:ApplyTheme()
+  f:Hide()
+end
+
+function FeedbackWindow.ShowErrorPrompt(msg)
+  if not prompt then buildPrompt() end
+  local first = tostring(msg or ""):match("^[^\n]*") or ""
+  if #first > 160 then first = first:sub(1, 160) .. "..." end
+  FeedbackWindow.promptMessage = first -- for tests
+  promptText:SetText("Sorry about that. A bug report helps get it fixed, and the error is already included.\n\n|cff999999"
+    .. first .. "|r")
+  prompt.frame:Show()
+end
+
+function FeedbackWindow.IsPromptShown() return prompt ~= nil and prompt.frame:IsShown() end

@@ -15,7 +15,7 @@ globals = {
 -- reaches for a new game API has to add it here, in plain sight.
 read_globals = {
   "C_Item", "C_Map", "C_QuestLog", "C_SuperTrack", "C_Texture", "C_Timer",
-  "CreateFrame", "DEFAULT_CHAT_FRAME", "GameTooltip", "GetBuildInfo", "GetLocale", "GetItemCount", "GetRealmName",
+  "CreateFrame", "DEFAULT_CHAT_FRAME", "GameTooltip", "GetBuildInfo", "GetLocale", "CreateSettingsButtonInitializer", "debugstack", "geterrorhandler", "seterrorhandler", "IsControlKeyDown", "GetItemCount", "GetRealmName",
   "HBD_PINS_WORLDMAP_SHOW_CONTINENT", "IsQuestFlaggedCompleted", "LibStub", "QuestieLoader",
   "GetQuestGreenRange", "IsShiftKeyDown", "RAID_CLASS_COLORS", "Settings", "TomTom", "UIParent", "UISpecialFrames", "UiMapPoint",
   "UnitClass", "UnitFactionGroup", "UnitRace", "UnitLevel", "UnitName", "issecretvalue",
