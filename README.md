@@ -1,4 +1,4 @@
-# BagQuests: Forever (0.2.0)
+# BagQuests: Forever (0.2.1)
 
 Tracks the WoW Forever quest chains that reward bags. It shows your next step on
 screen (RestedXP style), puts pins on the world map and minimap, and has an

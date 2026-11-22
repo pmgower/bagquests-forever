@@ -6,7 +6,7 @@ local App = {}
 ns.App = App
 _G.BagQuests = App
 
-App.VERSION = "0.2.0"
+App.VERSION = "0.2.1"
 local Domain = ns.Domain
 App.Domain = Domain
 local db
