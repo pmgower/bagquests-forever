@@ -3,7 +3,8 @@
 -- Sources: wowforever.gg, forevermastery.com (quest IDs from Wowhead),
 -- pro-gamer.gg, space4games.com; Alliance route from warcraft.wiki.gg,
 -- warcrafttavern.com and wow.gg. Objects, coordinates and quest levels checked
--- against the Forever QuestieDB (2026-11-16). Horde 79007 is verified in game;
+-- against the Forever QuestieDB (2026-11-16). Hints from Wowhead Forever comments
+-- on 79007 and 79976 (2026-11-22). Horde 79007 is verified in game;
 -- the rest is NOT yet: run /bq verify to check the quest IDs on your character.
 -- mapIDs are uiMapIDs (C_Map); coordinates are 0-100.
 local _, ns = ...
@@ -27,19 +28,24 @@ end
 -- From Stonetalon on, both factions follow the same steps.
 local TAIL = {
     { title = "Abandoned camp near Sun Rock", suggested = 24, object = "Pocket Litter",
-      mapID = 1442, x = 40.6, y = 52.4, turnsIn = 79192, starts = 79980,
-      reward = "Old Toolbox (12 slots)" },
+      mapID = 1442, x = 40.8, y = 52.6, turnsIn = 79192, starts = 79980,
+      reward = "Old Toolbox (12 slots)",
+      hint = "Leave the road at 51.6, 52.4 and head west up the hill to the camp." },
     { title = "Ledge north of the camp", suggested = 24, object = "Mound of Dirt",
-      mapID = 1442, x = 39.6, y = 49.9, turnsIn = 79980, starts = 79974 },
+      mapID = 1442, x = 39.6, y = 49.9, turnsIn = 79980, starts = 79974,
+      hint = "Jump down from the camp. If you miss, hug the wall on your right and walk back up." },
     { title = "Stonewrought Dam, north face", suggested = 32, object = "Carved Figurine",
       mapID = 1432, x = 49.4, y = 12.9, turnsIn = 79974, starts = 79975,
-      hint = "Drop from the upper walkway onto the ledge. Horde: Alliance guards nearby." },
+      hint = "Walk backward off the dam from about 49.6, 13.4 onto the ledge so you don't overshoot. "
+        .. "Horde: Alliance guards on the dam, and the dwarves in the Dun Algaz tunnel flag you for PvP." },
     { title = "Messenger Bag atop Thoradin's Wall, Arathi", suggested = 32, object = "Messenger Bag",
       mapID = 1417, x = 22.5, y = 24.1, turnsIn = 79975, starts = 79976,
-      hint = "Climb onto the wall using the broken cart on the Hillsbrad side, then follow it to the platform." },
+      hint = "Before the arch into Arathi, go left along the wall to the broken cart (Hillsbrad 87.5, 47.7). "
+        .. "Jump from the drum in the cart to its right rail, then to the fallen ladder, then up the rocks. "
+        .. "Male night elves can't fit under the cargo netting (game bug)." },
     { title = "Satchel under the Messenger Bag, same platform", suggested = 32, object = "Hastily Rolled-Up Satchel",
       mapID = 1417, x = 22.5, y = 24.2, turnsIn = 79976,
-      reward = "Cozy Sleeping Bag" },
+      reward = "Cozy Sleeping Bag and 5 Student Fodder" },
 }
 local function route(first, second)
   local steps = { first, second }
@@ -55,7 +61,7 @@ ns.Domain.Register({
   minLevel = 14,   -- required to pick up the first note
   rewardItems = { 211527 },                 -- Cozy Sleeping Bag
   bonusItems = { 221498, 1652 },            -- Old Toolbox (12) / Sturdy Lunchbox (12), at step 3
-  note = "Quests are level 22-32; guides suggest doing it around 30.",
+  note = "Quests are level 22-32. Do it in your 20s: one player at 35 couldn't pick up Stepping Stones.",
   quests = { -- names let /bq verify spot a wrong quest ID
     [79007] = "...and that note you found", [79008] = "...and that note you found",
     [79192] = "Stepping Stones", [79980] = "Scramble", [79974] = "Wet Job",

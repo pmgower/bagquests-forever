@@ -1,3 +1,8 @@
+## 0.2.1
+
+- Cozy Sleeping Bag: better directions in the step tooltips, from players who've finished it. Where to leave the road in Stonetalon, how to get off the Loch Modan dam, and where the jumping puzzle up Thoradin's Wall starts
+- Cozy Sleeping Bag: the final reward now lists the 5 Student Fodder, and the level advice says to do it in your 20s
+
 ## 0.2.0
 
 - 7 more bag questlines (9 total), plus the Alliance route for the Cozy Sleeping Bag
