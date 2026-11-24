@@ -1,6 +1,6 @@
 # CurseForge listing: copy and paste
 
-Written for **0.2.0**. Paste everything below the "Description" line into the project's
+Written for **0.2.1**. Paste everything below the "Description" line into the project's
 **Description** field (CurseForge accepts Markdown). It covers the tracker redesign (#11),
 bug reporting (#13) and the window scroll bars (#14).
 
@@ -21,7 +21,11 @@ Remove the 0.1.4 shots (the old tracker and the old alts window) from the galler
 
 **Categories:** Quests & Leveling (main), Map & Minimap, Bags & Inventory
 
-**License:** MIT
+**License:** MIT (set in the project settings; the description does not mention it)
+
+**Source:** GitHub, https://github.com/pmgower/bagquests-forever (project settings > Source)
+
+**Issues:** https://github.com/pmgower/bagquests-forever/issues (project settings > Issues)
 
 **Game version:** Forever (1.60.1)
 
@@ -65,7 +69,7 @@ It reads your quest history, so progress you made **before** installing the addo
 * **World map and minimap pins**, plus a **minimap button**: left-click toggles the tracker, right-click opens settings, shift-click opens the alts table, ctrl-click reports a bug.
 * **Settings page** under Options > AddOns.
 * **Alts table** (optional `BagQuests_Alts` module): every character's progress side by side, in the same resizable window. Disable the module to turn alt tracking off.
-* **Easy bug reports**: `/bq feedback`, the settings page or a ctrl-click on the minimap button opens a GitHub bug report with your version and details already filled in. If BagQuests itself hits an error, it offers the same report once per session (you can turn that off in settings).
+* **Easy bug reports**: `/bq feedback`, the settings page or a ctrl-click on the minimap button opens a bug report with your version and details already filled in. If BagQuests itself hits an error, it offers the same report once per session (you can turn that off in settings).
 
 ## Commands
 
@@ -93,16 +97,14 @@ It reads your quest history, so progress you made **before** installing the addo
 
 ## Please help verify
 
-The routes and quest IDs come from the Forever quest database and community guides, and are being checked in game. If you see a red **"Quest ID mismatch"** line in chat, or a pin in the wrong spot, use `/bq feedback`: it fills in your quest progress and any ID mismatches for us. Or post in the comments. The Alliance route for the Cozy Sleeping Bag is new in this version, so reports from Alliance players are especially welcome.
+The routes and quest IDs come from the Forever quest database and community guides, and are being checked in game. If you see a red **"Quest ID mismatch"** line in chat, or a pin in the wrong spot, use `/bq feedback`: it fills in your quest progress and any ID mismatches for us. Or post in the comments. The Alliance route for the Cozy Sleeping Bag is still new, so reports from Alliance players are especially welcome.
 
 ## Coming next
 
 * Filter questlines by bag size and by your level.
 * More bag quests as they are confirmed in Forever.
-* Tell us what you'd like next in the comments or on GitHub.
+* Tell us what you'd like next in the comments.
 
-## Source, issues and license
+## Credits
 
-Open source under the MIT license: https://github.com/pmgower/bagquests-forever
-
-Map pins use HereBeDragons by Nevcairiel (BSD).
+Map pins use HereBeDragons by Nevcairiel.
